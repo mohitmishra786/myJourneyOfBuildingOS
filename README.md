@@ -1,5 +1,3 @@
-# myJourneyOfBuildingOS
-
 ## Operating Systems: Architecture, Design, and Implementation
 ---
 
