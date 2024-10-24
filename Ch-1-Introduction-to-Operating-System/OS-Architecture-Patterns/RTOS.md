@@ -9,6 +9,26 @@ Preemptability: Higher-priority tasks must be able to interrupt lower-priority o
 Priority Inheritance: Mechanisms to prevent priority inversion.
 Minimal Interrupt Latency: Fast and deterministic interrupt handling.
 
+```mermaid
+stateDiagram-v2
+    [*] --> Ready: Task Created
+    Ready --> Running: Scheduled
+    Running --> Ready: Preempted
+    Running --> Blocked: I/O or Resource Wait
+    Blocked --> Ready: I/O Complete/Resource Available
+    Running --> [*]: Task Complete
+
+    note right of Running
+        Priority-based
+        scheduling
+    end note
+
+    note right of Blocked
+        Timeout possible
+        for RTOS tasks
+    end note
+```
+
 ## Scheduling Paradigms
 
 RTOS typically implements one or more of these scheduling approaches:
