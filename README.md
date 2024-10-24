@@ -10,7 +10,15 @@
     * System Calls and API Interfaces
     * OS Architecture Patterns
 
-2. **Computer System Architecture**
+2. **OS Architecture Patterns**
+    * Introduction to OS Architecture
+    * Monolithic Kernels
+    * MicroKernels
+    * Hybrid Kernels
+    * Virtual Machines as an OS Patterns
+    * ExoKernel
+    * Real-Time Operating Systems
+4. **Computer System Architecture**
     * Von Neumann Architecture
     * Instruction Execution Cycle
     * Privilege Levels and Protection Rings
@@ -18,7 +26,7 @@
     * I/O Subsystems
     * Interrupt Handling and DMA
 
-3. **Process Management**
+5. **Process Management**
     * Process Concepts and States
     * Process Control Block (PCB)
     * Context Switching
@@ -26,7 +34,7 @@
     * Inter-Process Communication (IPC)
     * POSIX Process Management APIs
 
-4. **Thread Management**
+6. **Thread Management**
     * Thread Models and Implementation
     * User-level vs Kernel-level Threads
     * Thread Scheduling
