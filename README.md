@@ -8,7 +8,6 @@
     * Historical Evolution
     * Types of Operating Systems
     * System Calls and API Interfaces
-    * OS Architecture Patterns
 
 2. **OS Architecture Patterns**
     * Introduction to OS Architecture
