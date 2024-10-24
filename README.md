@@ -16,7 +16,11 @@
     * Hybrid Kernels
     * Virtual Machines as an OS Patterns
     * ExoKernel
+    * Layered Systems
     * Real-Time Operating Systems
+    * Adaptive and Reflective Architectures
+    * Security in OS Architecture
+    * Future Trends in OS Architectures
 4. **Computer System Architecture**
     * Von Neumann Architecture
     * Instruction Execution Cycle
