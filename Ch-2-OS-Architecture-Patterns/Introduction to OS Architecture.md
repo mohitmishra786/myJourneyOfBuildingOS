@@ -6,6 +6,27 @@ Operating system architecture represents the fundamental organization of system 
 
 The journey of operating system architecture spans several decades, marked by distinct evolutionary phases:
 
+```mermaid
+graph TB
+    Start[Early Computing Systems] --> A[First Generation OS]
+    A -->|Basic Batch Processing| B[Second Generation OS]
+    B -->|Multiprogramming| C[Third Generation OS]
+    C -->|Time Sharing| D[Modern OS Architectures]
+    
+    D --> E[Monolithic Kernels]
+    D --> F[Microkernels]
+    D --> G[Hybrid Kernels]
+    D --> H[Exokernels]
+    
+    E -->|Example| I[Linux]
+    F -->|Example| J[QNX]
+    G -->|Example| K[Windows NT]
+    H -->|Example| L[MIT Exokernel]
+
+    style Start fill:#f9f,stroke:#333
+    style D fill:#bbf,stroke:#333
+```
+
 ### First Generation (1945-1955)
 In this era, there was no semblance of what we recognize as an operating system today. Computers required direct hardware manipulation, where programs were executed in isolation using manual operations via plugboards. This was the time of vacuum tube technology, where computing was a single-program affair, decidedly hands-on and rudimentary.
 
