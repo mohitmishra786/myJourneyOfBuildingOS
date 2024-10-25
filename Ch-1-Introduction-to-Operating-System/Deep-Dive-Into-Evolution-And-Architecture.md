@@ -1,6 +1,6 @@
 # Operating Systems: A Deep Dive into Evolution
 
-## Introduction to Operating Systems (1000+ words)
+## Introduction to Operating Systems
 
 An operating system (OS) represents the foundational software layer that bridges the gap between computer hardware and user applications. It serves as both a resource manager and an extended machine, providing abstractions that simplify complex hardware interactions while ensuring efficient utilization of system resources.
 
@@ -103,7 +103,7 @@ Operating systems play a crucial role in modern computing by:
    - Supporting system updates and maintenance
    - Facilitating system extension and customization
 
-## Historical Evolution (1000+ words)
+## Historical Evolution
 
 The evolution of operating systems mirrors the advancement of computer hardware and growing computational needs, marked by significant innovations and paradigm shifts.
 
