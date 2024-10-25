@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS Learning Journey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    typography: {
+                        DEFAULT: {
+                            css: {
+                                maxWidth: 'none',
+                            },
+                        },
+                    },
+                },
+            },
+            plugins: [
+                function({addBase, theme}) {
+                    addBase({
+                        'h1': { fontSize: theme('fontSize.2xl'), fontWeight: theme('fontWeight.bold') },
+                        'h2': { fontSize: theme('fontSize.xl'), fontWeight: theme('fontWeight.bold') },
+                        'h3': { fontSize: theme('fontSize.lg'), fontWeight: theme('fontWeight.bold') },
+                        'a': { color: theme('colors.blue.600') },
+                        'p': { marginTop: theme('spacing.4'), marginBottom: theme('spacing.4') },
+                        'ul': { listStyleType: 'disc', paddingLeft: theme('spacing.4') },
+                        'ol': { listStyleType: 'decimal', paddingLeft: theme('spacing.4') },
+                        'code': { 
+                            backgroundColor: theme('colors.gray.100'),
+                            padding: theme('spacing.1'),
+                            borderRadius: theme('borderRadius.sm'),
+                        },
+                        'pre': {
+                            backgroundColor: theme('colors.gray.100'),
+                            padding: theme('spacing.4'),
+                            borderRadius: theme('borderRadius.md'),
+                            overflowX: 'auto',
+                        }
+                    })
+                }
+            ],
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Configure marked to handle GitHub-flavored markdown
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            highlight: function(code, language) {
+                return code;
+            }
+        });
+    </script>
+    <script>
+        // Helper to check if we're on GitHub Pages
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const basePath = isGitHubPages ? '/myJourneyOfBuildingOS' : '';
+    </script>
+    <script src="book-config.js"></script>
+    <script src="book-viewer.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Error: ', msg, '\nURL: ', url, '\nLine:', line, '\nColumn:', col, '\nError object:', error);
+            return false;
+        };
+
+        // Initialize after everything is loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            const root = document.getElementById('root');
+            if (!root) {
+                console.error('Root element not found!');
+                return;
+            }
+            window.bookViewer = new BookViewer(root, bookConfig.chapters);
+        });
+    </script>
+</body>
+</html>
