@@ -52,7 +52,7 @@ System calls are the fundamental interface between an application and the operat
 
 ### 1.1 Process Control System Calls
 
-#### fork()
+### fork()
 Creates a new process by duplicating the calling process.
 
 ```c
@@ -77,7 +77,7 @@ int main() {
 }
 ```
 
-#### exec()
+### exec()
 Replaces the current process image with a new one.
 
 ```c
@@ -96,7 +96,7 @@ int main() {
 }
 ```
 
-#### exit()
+### exit()
 Terminates the calling process.
 
 ```c
@@ -117,7 +117,7 @@ int main() {
 
 ### 1.2 File Management System Calls
 
-#### open(), read(), write(), close()
+### open(), read(), write(), close()
 
 ```c
 #include <stdio.h>
@@ -171,7 +171,7 @@ int main() {
 
 ### 1.3 Device Management System Calls
 
-#### ioctl()
+### ioctl()
 Controls device parameters.
 
 ```c
@@ -200,7 +200,7 @@ int main() {
 
 ### 1.4 Information Maintenance System Calls
 
-#### getpid(), alarm(), sleep()
+### getpid(), alarm(), sleep()
 
 ```c
 #include <stdio.h>
@@ -231,7 +231,7 @@ int main() {
 
 ### 1.5 Communication System Calls
 
-#### pipe(), socket(), shmget()
+### pipe(), socket(), shmget()
 
 ```c
 #include <stdio.h>
