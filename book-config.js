@@ -1,6 +1,15 @@
 const bookConfig = {
     chapters: [
         {
+            title: "Index Of The Book",
+            pages: [
+                {
+                    title: "Table Of Content",
+                    path: "/myJourneyOfBuildingOS/indexOfBook.md"
+                }
+            ]
+        },
+        {
             title: "Introduction to Operating System",
             pages: [
                 {
