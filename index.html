@@ -55,11 +55,6 @@
             }
         });
     </script>
-    <script>
-        // Helper to check if we're on GitHub Pages
-        const isGitHubPages = window.location.hostname.includes('github.io');
-        const basePath = isGitHubPages ? '/myJourneyOfBuildingOS' : '';
-    </script>
     <script src="book-config.js"></script>
     <script src="book-viewer.js"></script>
 </head>
@@ -73,6 +68,7 @@
 
         // Initialize after everything is loaded
         window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM Content Loaded');
             const root = document.getElementById('root');
             if (!root) {
                 console.error('Root element not found!');
