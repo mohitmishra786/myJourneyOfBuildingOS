@@ -336,6 +336,35 @@ Let me explain the key aspects of the monolithic kernel implementation:
 
 ### Architecture Highlights:
 
+```mermaid
+graph TB
+    subgraph User_Space
+    A[User Applications]
+    B[System Libraries]
+    end
+
+    subgraph Kernel_Space
+    C[System Call Interface]
+    D[Process Management]
+    E[Memory Management]
+    F[File System]
+    G[Device Drivers]
+    H[Network Stack]
+    end
+
+    A -->|System Calls| B
+    B -->|API Calls| C
+    C --> D & E & F & G & H
+    
+    D <--> E
+    E <--> F
+    F <--> G
+    G <--> H
+
+    style User_Space fill:#f0f0f0
+    style Kernel_Space fill:#d0d0d0
+```
+
 - **All Kernel Services Run in Kernel Space**: This design choice ensures that critical operations are protected from direct user interference, enhancing security but requiring context switches for user-level operations, which can impact performance due to the overhead involved.
 
 - **Direct Function Calls Between Components**: Components within the kernel communicate directly through function calls rather than through message passing or other indirect methods, promoting efficiency but potentially reducing modularity.
