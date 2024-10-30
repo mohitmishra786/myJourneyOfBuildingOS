@@ -13,10 +13,6 @@ const bookConfig = {
             title: "Introduction to Operating System",
             pages: [
                 {
-                    title: "All In One",
-                    path: "/myJourneyOfBuildingOS/Ch-1-Introduction-to-Operating-System/All-In-One.md"
-                },
-                {
                     title: "Deep Dive Into Evolution And Architecture",
                     path: "/myJourneyOfBuildingOS/Ch-1-Introduction-to-Operating-System/Deep-Dive-Into-Evolution-And-Architecture.md"
                 },
@@ -34,8 +30,12 @@ const bookConfig = {
                     path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Introduction to OS Architecture.md"
                 },
                 {
+                    title: "Monolithic Kernel",
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Monolithic Kernel.md"
+                },
+                {
                     title: "Case Study: Traditional Unix Architecture",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Case Study Of Traditional Unix.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Traditional Unix Architecture.md"
                 },
                 {
                     title: "Microkernels",
@@ -43,11 +43,15 @@ const bookConfig = {
                 },
                 {
                     title: "Case Study: Mach Kernel Architecture",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Case Study Of Mach Kernel Architecture.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Mach Kernel Architecture.md"
                 },
                 {
                     title: "Hybrid Kernel Architecture",
                     path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Hybrid-Kernel-Arch.md"
+                },
+                {
+                    title: "Case Study: Windows NT Architecture",
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Windows_NT.md"
                 },
                 {
                     title: "Exokernel",
