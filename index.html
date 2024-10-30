@@ -46,7 +46,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        // Configure marked to handle GitHub-flavored markdown
         marked.setOptions({
             gfm: true,
             breaks: true,
@@ -66,7 +65,6 @@
             return false;
         };
 
-        // Initialize after everything is loaded
         window.addEventListener('DOMContentLoaded', () => {
             console.log('DOM Content Loaded');
             const root = document.getElementById('root');
