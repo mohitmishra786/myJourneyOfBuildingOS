@@ -35,6 +35,47 @@ graph LR
     * **Hardware Abstraction Layer (HAL):** This abstracts hardware specifics, allowing the OS to run on different hardware platforms by managing interrupts, DMA, and processor synchronization.
     * **Microkernel:** While not a pure microkernel, it handles fundamental tasks like thread scheduling, interrupt dispatch, and exception handling, providing essential OS services with a minimal footprint.
 
+```mermaid
+graph LR
+    subgraph User Mode
+        Win32Subsystem(Win32 Subsystem)
+    end
+    subgraph Kernel Mode
+        subgraph ExecutiveServices
+            FileSystem(File System)
+            NetworkStack(Network Stack)
+            ProcessManager(Process Manager)
+        end
+        MicrokernelCore(Microkernel Core)
+        HAL(Hardware Abstraction Layer)
+        Hardware(Hardware)
+    end
+
+    Win32Subsystem --> ExecutiveServices
+    ExecutiveServices --> MicrokernelCore
+    MicrokernelCore --> HAL
+    HAL --> Hardware
+```
+
+### Microkernel Core and Context Switching
+The microkernel core of the Windows NT kernel is responsible for fundamental operating system tasks, including thread scheduling and context switching. The context switching process in Windows NT can be depicted as follows:
+```mermaid
+sequenceDiagram
+    participant Thread1
+    participant Scheduler
+    participant MicrokernelCore
+    participant Thread2
+
+    Thread1->>Scheduler: Yield CPU
+    Scheduler->>MicrokernelCore: Request context switch
+    MicrokernelCore->>Thread1: Save context
+    MicrokernelCore->>Thread2: Load context
+    Thread2->>MicrokernelCore: Resume execution
+```
+In this scenario, when `Thread1` voluntarily yields the `CPU`, the scheduler requests a context switch from the microkernel core. The microkernel core then saves the state of `Thread1` and loads the context of `Thread2`, allowing the new thread to resume execution.
+
+This `context-switching` process is a critical part of the microkernel core's responsibilities, ensuring efficient and secure CPU time sharing among threads and processes.
+
 ### Implementation Details
 
 * **Object Manager:** All resources are treated as objects in NT, managed by the Object Manager. It provides a unified way to handle these objects across the system, including security management, lifecycle control, and name resolution.
