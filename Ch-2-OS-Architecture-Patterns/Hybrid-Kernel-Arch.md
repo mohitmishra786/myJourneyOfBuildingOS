@@ -143,7 +143,7 @@ static message_t message_queue[MAX_MESSAGES];
 static uint32_t queue_head = 0, queue_tail = 0;
 ```
 
-#### Process Management Functions
+### Process Management Functions
 
 **`create_process`:** The `create_process` function serves as the core process creation mechanism. When called, it dynamically allocates memory for a new process control block (PCB) using `malloc`. Each process receives a unique PID through the `next_pid` counter, which automatically increments after assignment.
 
@@ -182,7 +182,7 @@ void schedule_process(process_t* process) {
 
 A full implementation would manage context switching, save process states, and handle CPU time allocation among processes. The scheduler is crucial for multitasking, allowing multiple processes to share CPU time effectively.
 
-#### Memory Management Functions
+### Memory Management Functions
 
 **`allocate_page`:** The `allocate_page` function implements a page allocator using a free list approach. When a page is requested, it first checks the `free_pages` list for any previously freed pages. This recycling of pages is more efficient than constantly allocating new memory from the system. 
 
@@ -226,7 +226,7 @@ void free_page(page_t* page) {
 }
 ```
 
-#### Inter-Process Communication (IPC) Functions
+### Inter-Process Communication (IPC) Functions
 
 **`send_message`:** The `send_message` function implements a circular buffer (ring buffer) message queue system. Messages are stored in a fixed-size array (`message_queue`) with head and tail pointers managing the queue boundaries. 
 
@@ -274,7 +274,7 @@ message_t* receive_message(uint32_t receiver_id) {
 
 This targeted message delivery ensures that processes only receive messages intended for them. The function includes queue empty checks and proper logging of message reception activities.
 
-#### Memory Cleanup Implementation
+### Memory Cleanup Implementation
 
 **`cleanup`:** The `cleanup` function ensures proper resource management by systematically freeing all allocated memory. It traverses both the process list and free pages list, freeing each node to prevent memory leaks. 
 
@@ -298,7 +298,7 @@ void cleanup(void) {
 
 This cleanup is crucial for system stability and resource management, especially in long-running systems. The function uses a simple while loop pattern to traverse and free linked lists, ensuring all resources are properly returned to the system.
 
-#### Main Function
+### Main Function
 The `main` function serves as a comprehensive test suite for our `kernel` implementation. It systematically tests each major component of the system: process management, memory management, and inter-process communication. It creates test processes, allocates and manipulates memory pages, and demonstrates message passing between processes. The function includes clear section markers and logging to make the test flow easy to follow. It concludes with a cleanup phase to ensure all allocated resources are properly freed.
 
 ```c
@@ -356,7 +356,7 @@ int main(void) {
 ```
 This implementation, while simplified, demonstrates the core concepts of kernel development including process management, memory management, and inter-process communication. It provides a foundation that could be extended with more sophisticated features like process scheduling algorithms, virtual memory management, or more complex IPC mechanisms.
 
-#### Output of the program
+### Output of the program
 
 ```bash
 Starting kernel simulation...
