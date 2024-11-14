@@ -15,29 +15,7 @@ A microkernel system delegates traditional kernel services like file systems, de
 
 The trade-off for this flexibility is performance overhead from context switching and message passing between user-space services. Modern microkernel designs have significantly minimized this overhead through careful optimization of IPC paths and intelligent scheduling.
 
-```mermaid
-graph TD
-    A[User Applications] -->|IPC| B[System Services]
-    B -->|IPC| C[Microkernel]
-    
-    subgraph User Space
-    A
-    B
-    D[File Server]
-    E[Device Drivers]
-    F[Memory Manager]
-    end
-    
-    subgraph Kernel Space
-    C
-    end
-    
-    D -->|IPC| C
-    E -->|IPC| C
-    F -->|IPC| C
-    
-    C --> G[Hardware]
-```
+[![](https://mermaid.ink/img/pako:eNptkMFugzAMhl8lyrl9AQ6TWhjbVCFNYrsscPCCC9FIgkzYhNq--wKErVKbQ2L_-e0vzolLWyGPeE3QNewtKQzzayfeeyS267pWSXDKmr5k2-3D-eU1PrO9yMfeoWY50reS2JdL1f7fEotMSbJfSAbbcL3s_fC5sGZC3oHEwAxNliMRqWpxJiCFBo8iwYnHElJeXbGpyFBbGlkGBuo_N5rqLvcwv-maHN8tSK6mCfwbJb1RQsdJZ0_iGaj6AcKSb7hG0qAq_9enyVRw16DGgkc-rPAIQ-sKXpiLt8LgbD4aySNHA2442aFu1mToKnCYKPDj6FXswHxY69MjtD1efgHoipHA?type=png)](https://mermaid.live/edit#pako:eNptkMFugzAMhl8lyrl9AQ6TWhjbVCFNYrsscPCCC9FIgkzYhNq--wKErVKbQ2L_-e0vzolLWyGPeE3QNewtKQzzayfeeyS267pWSXDKmr5k2-3D-eU1PrO9yMfeoWY50reS2JdL1f7fEotMSbJfSAbbcL3s_fC5sGZC3oHEwAxNliMRqWpxJiCFBo8iwYnHElJeXbGpyFBbGlkGBuo_N5rqLvcwv-maHN8tSK6mCfwbJb1RQsdJZ0_iGaj6AcKSb7hG0qAq_9enyVRw16DGgkc-rPAIQ-sKXpiLt8LgbD4aySNHA2442aFu1mToKnCYKPDj6FXswHxY69MjtD1efgHoipHA)
 
 ## Implementation Strategy
 
