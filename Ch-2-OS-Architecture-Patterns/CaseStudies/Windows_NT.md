@@ -13,20 +13,8 @@ Developed in the early 1990s under Dave Cutler's leadership, Windows NT was desi
 
 The Windows NT kernel is a hybrid kernel, combining elements of both monolithic and microkernel architectures. Its design is layered and modular, aiming for a balance between performance, flexibility, and security.
 
-```mermaid
-graph LR
-    A[Windows NT Kernel] --> B(Executive Layer)
-    A --> C(Kernel Layer)
-    B --> D(Object Manager)
-    B --> E{Executive Subsystems}
-    E --> F(Registry)
-    E --> G(Process Structures)
-    E --> H(Virtual Memory Manager)
-    E --> I(Cache Manager)
-    E --> J(LPC)
-    C --> K(HAL)
-    C
-```
+[![](https://mermaid.ink/img/pako:eNptkd9OwjAUh1-l6VVJ4AW4MIExRRlKmNFE58WhO2w1a7v0j7ose3frxqIQe9Xz_b62J6ct5TpHOqeFgbokyT5TJKzF67NQuf605P6RbNAorN7IbHZFliz-Qu6d-ECSQINmcjrQpxEb3LNo2Ucr9nB4R-7IFhQUF2Hc_t6a-oNtrENpu0GJe-Wa7bEQ1plm8hffsJ3RHK0lqTOeO2_Qnglr9iSM81CRLUptmov3B-mWRcBL_De7Y8kuOpGoJxu2XiQjoVMq0UgQeRhi-wMz6kqUmNF52OZ4BF-5jGaqCyp4p9NGcToP3eKUGu2Lcix8nYPDlYDwF3KENagXrUN5hMpi9w1pL4N7?type=png)](https://mermaid.live/edit#pako:eNptkd9OwjAUh1-l6VVJ4AW4MIExRRlKmNFE58WhO2w1a7v0j7ose3frxqIQe9Xz_b62J6ct5TpHOqeFgbokyT5TJKzF67NQuf605P6RbNAorN7IbHZFliz-Qu6d-ECSQINmcjrQpxEb3LNo2Ucr9nB4R-7IFhQUF2Hc_t6a-oNtrENpu0GJe-Wa7bEQ1plm8hffsJ3RHK0lqTOeO2_Qnglr9iSM81CRLUptmov3B-mWRcBL_De7Y8kuOpGoJxu2XiQjoVMq0UgQeRhi-wMz6kqUmNF52OZ4BF-5jGaqCyp4p9NGcToP3eKUGu2Lcix8nYPDlYDwF3KENagXrUN5hMpi9w1pL4N7)
+
 ### Layers
 
 * **Executive Layer:** This layer provides the core services of the OS. It manages memory, processes, and threads, controls security, and handles I/O operations. The Executive is where most of the NT kernel's functionality resides, including the Virtual Memory Manager for efficient memory use, the Process/Thread Manager for multitasking, the Security Reference Monitor for enforcing security policies, and the I/O Manager for interfacing with hardware and managing file systems.
@@ -35,43 +23,13 @@ graph LR
     * **Hardware Abstraction Layer (HAL):** This abstracts hardware specifics, allowing the OS to run on different hardware platforms by managing interrupts, DMA, and processor synchronization.
     * **Microkernel:** While not a pure microkernel, it handles fundamental tasks like thread scheduling, interrupt dispatch, and exception handling, providing essential OS services with a minimal footprint.
 
-```mermaid
-graph LR
-    subgraph User Mode
-        Win32Subsystem(Win32 Subsystem)
-    end
-    subgraph Kernel Mode
-        subgraph ExecutiveServices
-            FileSystem(File System)
-            NetworkStack(Network Stack)
-            ProcessManager(Process Manager)
-        end
-        MicrokernelCore(Microkernel Core)
-        HAL(Hardware Abstraction Layer)
-        Hardware(Hardware)
-    end
-
-    Win32Subsystem --> ExecutiveServices
-    ExecutiveServices --> MicrokernelCore
-    MicrokernelCore --> HAL
-    HAL --> Hardware
-```
+[![](https://mermaid.ink/img/pako:eNp1kk1rwzAMhv-K8SmD9rLdchiUfVBYO8bCGIxcFEdNTRM7yHa7UPrf58RJlmZMJ72vH1uy7DMXOkce84Kg3rPNe6qYD-OyYHwYJLb1SPDb-JTq7jZxmWmMxSrqJBv1TQBR5bOTXpAUlrOzxtWnbxTOyiMmSEcp0PwybTzLEpNQr01ZMq01xCvak6ZDYkEcol6wTs3AN9K-gtmCggIp6iXr9QQeb9HGVgrSh-4WD5owmmjWGpN969UmWgPlJyBkq8xYAmGlVmwDzVWBARrp6fhCej1utlze_zesP3YHz9oO6MzsQN90WPRJMPqe-IJXSBXI3P-Tc8uk3O6xwpTHPs1xB660KU_VxaPgrE4aJXhsyeGCk3bFfhCuzsHiowT_6tVg1qC-tPZyB6XByw_FYtPl?type=png)](https://mermaid.live/edit#pako:eNp1kk1rwzAMhv-K8SmD9rLdchiUfVBYO8bCGIxcFEdNTRM7yHa7UPrf58RJlmZMJ72vH1uy7DMXOkce84Kg3rPNe6qYD-OyYHwYJLb1SPDb-JTq7jZxmWmMxSrqJBv1TQBR5bOTXpAUlrOzxtWnbxTOyiMmSEcp0PwybTzLEpNQr01ZMq01xCvak6ZDYkEcol6wTs3AN9K-gtmCggIp6iXr9QQeb9HGVgrSh-4WD5owmmjWGpN969UmWgPlJyBkq8xYAmGlVmwDzVWBARrp6fhCej1utlze_zesP3YHz9oO6MzsQN90WPRJMPqe-IJXSBXI3P-Tc8uk3O6xwpTHPs1xB660KU_VxaPgrE4aJXhsyeGCk3bFfhCuzsHiowT_6tVg1qC-tPZyB6XByw_FYtPl)
 
 ### Microkernel Core and Context Switching
 The microkernel core of the Windows NT kernel is responsible for fundamental operating system tasks, including thread scheduling and context switching. The context switching process in Windows NT can be depicted as follows:
-```mermaid
-sequenceDiagram
-    participant Thread1
-    participant Scheduler
-    participant MicrokernelCore
-    participant Thread2
 
-    Thread1->>Scheduler: Yield CPU
-    Scheduler->>MicrokernelCore: Request context switch
-    MicrokernelCore->>Thread1: Save context
-    MicrokernelCore->>Thread2: Load context
-    Thread2->>MicrokernelCore: Resume execution
-```
+[![](https://mermaid.ink/img/pako:eNp9kUFPAyEQhf8K4VwP9sihl3rUxLj1oOEygddCZGGFQWua_ndpdreJrcqJ4X3vDQwHaZKFVLLgvSIa3HnaZep1FG0NlNkbP1BksXEZZG-vhc442BqQr6UHb3J6Q44I65TxV-hSx1GaetysVudQJV48ghXrx-eROSuNushX4un0isLCpMjYsyifno0bjRdws0_tlOjoA7Pnf3ipxH0i-xOepN8vVGoPgT1MZZ-iXMgeuSdv28wPJ7uW7NBDS9W2FluqgbXU8dhQqpy6r2ik4lyxkDnVnZuLOlji-b_mwzbV15RauaVQcPwGjzCm5w?type=png)](https://mermaid.live/edit#pako:eNp9kUFPAyEQhf8K4VwP9sihl3rUxLj1oOEygddCZGGFQWua_ndpdreJrcqJ4X3vDQwHaZKFVLLgvSIa3HnaZep1FG0NlNkbP1BksXEZZG-vhc442BqQr6UHb3J6Q44I65TxV-hSx1GaetysVudQJV48ghXrx-eROSuNushX4un0isLCpMjYsyifno0bjRdws0_tlOjoA7Pnf3ipxH0i-xOepN8vVGoPgT1MZZ-iXMgeuSdv28wPJ7uW7NBDS9W2FluqgbXU8dhQqpy6r2ik4lyxkDnVnZuLOlji-b_mwzbV15RauaVQcPwGjzCm5w)
+
 In this scenario, when `Thread1` voluntarily yields the `CPU`, the scheduler requests a context switch from the microkernel core. The microkernel core then saves the state of `Thread1` and loads the context of `Thread2`, allowing the new thread to resume execution.
 
 This `context-switching` process is a critical part of the microkernel core's responsibilities, ensuring efficient and secure CPU time sharing among threads and processes.
