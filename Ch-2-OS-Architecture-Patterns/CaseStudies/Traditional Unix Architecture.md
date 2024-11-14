@@ -13,36 +13,7 @@ AT&T Bell Labs developed Unix in the early 1970s, with Ken Thompson and Dennis R
 - Multi-user and multi-tasking support
 
 ## Architectural Analysis
-
-```mermaid
-graph TB
-    subgraph Traditional_Unix
-    U1[User Programs]
-    U2[Shell]
-    U3[System Libraries]
-    U4[Monolithic Kernel]
-    U5[Hardware]
-    end
-
-    subgraph Mach_Kernel
-    M1[User Programs]
-    M2[System Servers]
-    M3[Microkernel]
-    M4[Hardware]
-    end
-
-    U1 --> U2
-    U2 --> U3
-    U3 --> U4
-    U4 --> U5
-
-    M1 -->|IPC| M2
-    M2 -->|IPC| M3
-    M3 --> M4
-
-    style Traditional_Unix fill:#f0f0f0
-    style Mach_Kernel fill:#d0d0d0
-```
+[![](https://mermaid.ink/img/pako:eNp9UbFOwzAU_JXIrK3UknTJwAAMILBUKWQhQdVr_NJYOHb14gBV23_HaeIoAoS9-M53enf2kRVGIIvZjmBfBS-3uQ7catrtQBAIaaXRoDapll_9dbrM0gYpWJNxsrp5G-jrLKlQKQ_DLDk0FuvgWW4JSOIojDJutFHSVrIInpA0jqZV9gAkPoFwYFCLXP-IxaGoNr2vv-F_J-LXPkKC9IE08mHGZUHmfTqaR_-MTpfBfH7jKvqqPQx91R5Gvl8PV97NL-7T4_ru5DL5bBMu9LkuRh6Nje1B4a9fCEqpVHxVLro9FU7eZdCIRbfZjNVINUjhvvrYOXJmK6wxZ7E7CiyhVTZnuT47KbTWJAddsNhSizNGpt1VHrR7ARbvJXTvzOISVOPYPehXYzw-fwPjQ7vM?type=png)](https://mermaid.live/edit#pako:eNp9UbFOwzAU_JXIrK3UknTJwAAMILBUKWQhQdVr_NJYOHb14gBV23_HaeIoAoS9-M53enf2kRVGIIvZjmBfBS-3uQ7catrtQBAIaaXRoDapll_9dbrM0gYpWJNxsrp5G-jrLKlQKQ_DLDk0FuvgWW4JSOIojDJutFHSVrIInpA0jqZV9gAkPoFwYFCLXP-IxaGoNr2vv-F_J-LXPkKC9IE08mHGZUHmfTqaR_-MTpfBfH7jKvqqPQx91R5Gvl8PV97NL-7T4_ru5DL5bBMu9LkuRh6Nje1B4a9fCEqpVHxVLro9FU7eZdCIRbfZjNVINUjhvvrYOXJmK6wxZ7E7CiyhVTZnuT47KbTWJAddsNhSizNGpt1VHrR7ARbvJXTvzOISVOPYPehXYzw-fwPjQ7vM)
 
 ### Core Components
 
