@@ -11,25 +11,7 @@ Real-Time Operating Systems (RTOS) represent a specialized class of operating sy
 * Priority Inheritance: Mechanisms to prevent priority inversion.
 * Minimal Interrupt Latency: Fast and deterministic interrupt handling.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Ready: Task Created
-    Ready --> Running: Scheduled
-    Running --> Ready: Preempted
-    Running --> Blocked: I/O or Resource Wait
-    Blocked --> Ready: I/O Complete/Resource Available
-    Running --> [*]: Task Complete
-
-    note right of Running
-        Priority-based
-        scheduling
-    end note
-
-    note right of Blocked
-        Timeout possible
-        for RTOS tasks
-    end note
-```
+[![](https://mermaid.ink/img/pako:eNptkcFqwzAMhl_F-DgaCjvmMNi6y04tbWGwZQc1VhJT2wq2XCil7z6nbtKOVSdb-v7fknWSNSmUpQwMjO8aWg-2ODxXTqT4fvoRRfEi1gjqWIothL1YeEykysClkJHonHZtKTZ1hyqaicj5e5uVR7Q9PyLeDNV7VKX4mC8F-aQIFH2N4hM0Z_yK3BsO8IJsb5BxPkleD6AN7Az-fybNNU5zlVUuU44Yhddtx4KaUZNLQ6y8Jq_5WOwgjP0PEfLQE4tOXawe215HuMm32iJFFj2FoKeOh2iGT9guN4JTt-GvuZxJi96CVml_p6FWSe7QYiXLdFTYQDRcycqdEwqRaXN0tSzZR5xJT7Htxkvs1W39Y7IH90WUrg2YgOdfIWSzOw?type=png)](https://mermaid.live/edit#pako:eNptkcFqwzAMhl_F-DgaCjvmMNi6y04tbWGwZQc1VhJT2wq2XCil7z6nbtKOVSdb-v7fknWSNSmUpQwMjO8aWg-2ODxXTqT4fvoRRfEi1gjqWIothL1YeEykysClkJHonHZtKTZ1hyqaicj5e5uVR7Q9PyLeDNV7VKX4mC8F-aQIFH2N4hM0Z_yK3BsO8IJsb5BxPkleD6AN7Az-fybNNU5zlVUuU44Yhddtx4KaUZNLQ6y8Jq_5WOwgjP0PEfLQE4tOXawe215HuMm32iJFFj2FoKeOh2iGT9guN4JTt-GvuZxJi96CVml_p6FWSe7QYiXLdFTYQDRcycqdEwqRaXN0tSzZR5xJT7Htxkvs1W39Y7IH90WUrg2YgOdfIWSzOw)
 
 ### 2.1 Deterministic Behavior
 The hallmark of an RTOS is its ability to provide guaranteed response times to events:
