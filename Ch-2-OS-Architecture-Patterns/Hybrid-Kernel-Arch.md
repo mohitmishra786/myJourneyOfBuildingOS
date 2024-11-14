@@ -39,52 +39,9 @@ This selective approach to kernel services results in a more pragmatic system ar
 ## Hierarchical Hybrid Kernel Architecture
 
 A common hybrid kernel design is the hierarchical architecture, which can be visualized as follows:
-```mermaid
-graph TD
-    subgraph User Mode
-        Application1(Application 1)
-        Application2(Application 2)
-        Application3(Application 3)
-    end
-    subgraph Kernel Mode
-        subgraph Higher-Level Services
-            FileSystem(File System)
-            NetworkStack(Network Stack)
-            ProcessManager(Process Manager)
-        end
-        subgraph Core Kernel
-            MemoryManager(Memory Manager)
-            Scheduler(Scheduler)
-            IPC(IPC Mechanisms)
-            DeviceDrivers(Device Drivers)
-        end
-        Hardware(Hardware)
-    end
-    
-    Application1 --> FileSystem
-    Application2 --> NetworkStack
-    Application3 --> ProcessManager
-    
-    FileSystem -->|uses| MemoryManager
-    FileSystem -->|schedules| Scheduler
-    FileSystem -->|communicates| IPC
-    FileSystem -->|manages| DeviceDrivers
 
-    NetworkStack -->|uses| MemoryManager
-    NetworkStack -->|schedules| Scheduler
-    NetworkStack -->|communicates| IPC
-    NetworkStack -->|manages| DeviceDrivers
+[![](https://mermaid.ink/img/pako:eNp9lF9LwzAUxb9KyFOF7cHtbQ-COETRyaD6In2J7XUNNkm5aSZD_e4m_bemTRdYuSf5cXNymvWHpioDuqEHZGVOXreJJHZo89FMvGlAsrNIM-_GbVkWPGUVV_I6GghyfRWEVh60CkNrD1q3EMhs5OcJUEIxctSvPvBDDrh8hqNlYsAjT0GfOTfueQHxSVcgIleSpr7yoReovhV-xRVLv6JWkFqNwD0qu4PeMckOgFErSasHcH8Sz--dQmiP5PfdgVB46to2KtDVjTjNITOFxfpqRDzu7yL7s03TnEmuhR4BW3BBbZEfAXXUKNLKuTM8MMy-GULUFeNX1jyHl4UslzeD_CfAqgaG2U-QdY34qQ-3O3d34K_RoH_9MIOcbpOzcB9iEEyVEEY6M461oQYpUW9lAS_YRDbw8ICXXU7IeZ8TdMbphLvs1U_6stsAO-83AM84DpBzns_3wLNX35numjbrvZvAmvurTGe9rbx1uqACUDCe2c_oj6MTWuUgIKEbW2bwyUxRJTSRfxZlplLxSaZ0U6GBBUVlDnknTJnZ0285s58H0U2WTL4rZeUnKzT8_QM-KdsY?type=png)](https://mermaid.live/edit#pako:eNp9lF9LwzAUxb9KyFOF7cHtbQ-COETRyaD6In2J7XUNNkm5aSZD_e4m_bemTRdYuSf5cXNymvWHpioDuqEHZGVOXreJJHZo89FMvGlAsrNIM-_GbVkWPGUVV_I6GghyfRWEVh60CkNrD1q3EMhs5OcJUEIxctSvPvBDDrh8hqNlYsAjT0GfOTfueQHxSVcgIleSpr7yoReovhV-xRVLv6JWkFqNwD0qu4PeMckOgFErSasHcH8Sz--dQmiP5PfdgVB46to2KtDVjTjNITOFxfpqRDzu7yL7s03TnEmuhR4BW3BBbZEfAXXUKNLKuTM8MMy-GULUFeNX1jyHl4UslzeD_CfAqgaG2U-QdY34qQ-3O3d34K_RoH_9MIOcbpOzcB9iEEyVEEY6M461oQYpUW9lAS_YRDbw8ICXXU7IeZ8TdMbphLvs1U_6stsAO-83AM84DpBzns_3wLNX35numjbrvZvAmvurTGe9rbx1uqACUDCe2c_oj6MTWuUgIKEbW2bwyUxRJTSRfxZlplLxSaZ0U6GBBUVlDnknTJnZ0285s58H0U2WTL4rZeUnKzT8_QM-KdsY)
 
-    ProcessManager -->|uses| MemoryManager
-    ProcessManager -->|schedules| Scheduler
-    ProcessManager -->|communicates| IPC
-    ProcessManager -->|manages| DeviceDrivers
-    
-    MemoryManager --> Hardware
-    Scheduler --> Hardware
-    IPC --> Hardware
-    DeviceDrivers --> Hardware
-```
 In this hierarchical hybrid kernel:
 
 * The core kernel provides fundamental operating system primitives, such as process scheduling, memory management, and device driver interfaces. These components remain in the privileged kernel mode for performance reasons.
