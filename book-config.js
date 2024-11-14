@@ -66,8 +66,16 @@ const bookConfig = {
                     path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Virtual Machines as an OS Pattern.md"
                 },
                 {
+                    title: "Operating System Layer Architecture",
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Layered-Systems.md"
+                }
+                {
                     title: "Real Time Operating Systems",
                     path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/RTOS.md"
+                },
+                {
+                    title: "Adaptive and Reflective Architectures",
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Adaptive-And-Reflective-Architecture.md"
                 }
             ]
         }
