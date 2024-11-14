@@ -218,9 +218,9 @@ Let me explain the key aspects of the monolithic kernel implementation:
 
 - **Interrupt Handling Framework**: A structured approach to manage interrupts, allowing the OS to respond to various events by temporarily suspending one process to execute an interrupt service routine, thereby maintaining system stability and performance.
 
-### Architecture Highlights:
+### Architecture:
 
-![archMonolithic](./../images/monolithicArch.png)
+[![](https://mermaid.ink/img/pako:eNplUWFrwjAQ_StHBvuksM9lDKq1KptD6PZl7RgxvWowTUqSOor635cuKSuu4aDvvbvj3d2ZMFUiiche0-YAb7NCgvtMu_PEu0H9lTWUoRfivGcgbhrBGbVcSfPplVmedcZiDS98p6nmOAgoy5umz6glinHb-VA8p0LAWlrUlRNDhyTfasXQGNhQSfdYo7RBWuQbrJXu_itpnnKB4PsGbpkneOIMIdH8hHpwuMpf0X4rfYTMUna89R3DdPp0GRk0Fwh7mv1K8XY98PMwT89DAvewcJG6WLpYeTEMBY99ziLM4VEavHu0DK49CtXGdm6sv7tAxYWI7qqH_o1TxlsOSeVD_8iE1Khrykt393NfUhB7cLsrSOR-S6xoK2xBCnl1qbS1KuskI5HVLU6IVu3-MIC2KanFhFN32HogGyo_lHKwosLg9Qc3B747?type=png)](https://mermaid.live/edit#pako:eNplUWFrwjAQ_StHBvuksM9lDKq1KptD6PZl7RgxvWowTUqSOor635cuKSuu4aDvvbvj3d2ZMFUiiche0-YAb7NCgvtMu_PEu0H9lTWUoRfivGcgbhrBGbVcSfPplVmedcZiDS98p6nmOAgoy5umz6glinHb-VA8p0LAWlrUlRNDhyTfasXQGNhQSfdYo7RBWuQbrJXu_itpnnKB4PsGbpkneOIMIdH8hHpwuMpf0X4rfYTMUna89R3DdPp0GRk0Fwh7mv1K8XY98PMwT89DAvewcJG6WLpYeTEMBY99ziLM4VEavHu0DK49CtXGdm6sv7tAxYWI7qqH_o1TxlsOSeVD_8iE1Khrykt393NfUhB7cLsrSOR-S6xoK2xBCnl1qbS1KuskI5HVLU6IVu3-MIC2KanFhFN32HogGyo_lHKwosLg9Qc3B747)
 
 - **All Kernel Services Run in Kernel Space**: This design choice ensures that critical operations are protected from direct user interference, enhancing security but requiring context switches for user-level operations, which can impact performance due to the overhead involved.
 
