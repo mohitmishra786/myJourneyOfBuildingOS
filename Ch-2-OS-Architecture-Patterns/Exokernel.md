@@ -6,93 +6,7 @@ Exokernel is a unique operating system architecture that takes a fundamentally d
 
 The key idea behind the exokernel architecture is to minimize the amount of functionality implemented in the kernel and instead provide a thin, lightweight layer that securely multiplexes access to hardware resources. This approach is motivated by the observation that traditional operating systems often impose unnecessary abstractions and limitations on applications, which can lead to suboptimal performance and flexibility.
 
-```mermaid
-flowchart TB
-    subgraph "Hardware Layer"
-        CPU[Physical CPU]
-        MEM[Physical Memory]
-        DISK[Disk]
-        NET[Network]
-    end
-
-    subgraph "Exokernel Core"
-        subgraph "Resource Management"
-            TRACK[Resource Tracker]
-            ALLOC[Resource Allocator]
-            PROT[Protection Manager]
-        end
-
-        subgraph "Security"
-            SECURE[Security Monitor]
-            TLB[TLB Manager]
-        end
-
-        subgraph "Multiplexing"
-            SCHED[CPU Scheduler]
-            MMAP[Memory Multiplexer]
-            DISK_MUX[Disk Multiplexer]
-            NET_MUX[Network Multiplexer]
-        end
-    end
-
-    subgraph "Library Operating Systems"
-        subgraph "LibOS 1"
-            FS1[File System]
-            VM1[Virtual Memory]
-            NET1[Network Stack]
-            SCHED1[Scheduler]
-        end
-
-        subgraph "LibOS 2"
-            FS2[File System]
-            VM2[Virtual Memory]
-            NET2[Network Stack]
-            SCHED2[Scheduler]
-        end
-    end
-
-    subgraph "Applications"
-        APP1[Application 1]
-        APP2[Application 2]
-        APP3[Application 3]
-    end
-
-    %% Resource Management Flow
-    TRACK -->|"Monitor"| CPU & MEM & DISK & NET
-    ALLOC -->|"Allocate"| TRACK
-    PROT -->|"Protect"| ALLOC
-
-    %% Security Flow
-    SECURE -->|"Verify"| TRACK
-    TLB -->|"Manage"| MEM
-
-    %% Multiplexing Flow
-    SCHED -->|"Schedule"| CPU
-    MMAP -->|"Map"| MEM
-    DISK_MUX -->|"Access"| DISK
-    NET_MUX -->|"Route"| NET
-
-    %% LibOS Interactions
-    FS1 & FS2 -->|"Request"| DISK_MUX
-    VM1 & VM2 -->|"Request"| MMAP
-    NET1 & NET2 -->|"Request"| NET_MUX
-    SCHED1 & SCHED2 -->|"Request"| SCHED
-
-    %% Application Flow
-    APP1 & APP2 -->|"Use"| LibOS1
-    APP3 -->|"Use"| LibOS2
-
-    %% Styling
-    classDef hardware fill:#ffcccc,stroke:#333,stroke-width:2px
-    classDef exokernel fill:#ccffcc,stroke:#333,stroke-width:2px
-    classDef libos fill:#cce5ff,stroke:#333,stroke-width:2px
-    classDef app fill:#ffe5cc,stroke:#333,stroke-width:2px
-
-    class CPU,MEM,DISK,NET hardware
-    class TRACK,ALLOC,PROT,SECURE,TLB,SCHED,MMAP,DISK_MUX,NET_MUX exokernel
-    class FS1,VM1,NET1,SCHED1,FS2,VM2,NET2,SCHED2 libos
-    class APP1,APP2,APP3 app
-```
+[![](https://mermaid.ink/img/pako:eNqVVk1v4jAQ_StRqu7JPSSoFw4rsUDVqqRFhFarDdXKNU6JGuKs46hFbf_7zthOMARaNRKQeN6M5-M9hzefiSX3-36aixe2olJ581-LwoOrqh-fJC1X3sK_pHL5QiX3JnTD5cI3ALyG07tkutpUGaM5PjxsTdE42poivhZy41hHV_F1MsqqZ2ftZjxPbrh6EbJZ5cVyUXTSGb-KZy4LDjsKyd10HNCMV6KWjHsRLegTX_NCuUi85rPB8DppgXNJGcR92AUNJpPb4RY0yHPBqBL7sOnsdp5MpVCcqUwUdlcX5dSyl2rMWS0ztdnPLx4P72bjpDF7kSiy7s7zya8EPt_aMapzlZU5f82Kp86uw8vxKIFZejFb8WWdd1oSRYNpYibqtZE6KJzw3-jut57yJziYuobZyR9B6lqOU2KSPUoK6dyWXFIFVXnxplJ8XR1hB-BvYy_Yr_0iDpKLLOfWey_T-yhI7jOp6kOEtqUEbR2xAjo9HOhtkBxq7PFhmVzDbq7hp7mGX-Yafp1reDzX48MYlGUOqkcd7PR_MJ0GiWP0gocdY7hjDHeNvR1jr3tAnJ56BzTvXcDBZgBa7t7Z2c93EICR0sJ_x1PL-4GnFXwjZ-EHemNctPiti1U-Rx8dykBQ-BZh5Y8A7ehk1mp4m45Rt3W95zJLN3uhUdU2XV0PmiFPJ6yrYzc0js66NvOzpRoAKrgNXbZxXdk2VTPGqwoRaDAQq1iLmInaNEV3rU3NsPaqUCBIZqhQWIlBh4G8jTv_V_NKNTtgYAMEtQEQeNwFYvptKoEZ2AGYzdPpCWINr7tove4U4NJt21rkMARBttoQd5WuXtcbtKDeAWvoEkJtcjx89TPLaVWNeOqtmhdtmuV5_yRNGVykUhJeeP2TXq9n789esqVa9cPydS8Ab1-NJgJjGOM7EfLsUVStNz9P0-9407Jsc-fnX-7seCM5CbCQIAsIjK5thgvS6iBaXQSVR4yKCEiF6AES5AZpmEQaqrZ9cYMBFQmwDEGB8Q4IEBPWQlwLiaWKbonriCQgSAGiJw1F-8Rfc7mm2RL-S70hduGrFZxAC78Pt0ueUpAqHoYfAKW1EvGmYH5fyZoTX4r6aeX3U5pX8FSXSzhmRhmF83TdQEpa_BFibUEf_wFi8udM?type=png)](https://mermaid.live/edit#pako:eNqVVk1v4jAQ_StRqu7JPSSoFw4rsUDVqqRFhFarDdXKNU6JGuKs46hFbf_7zthOMARaNRKQeN6M5-M9hzefiSX3-36aixe2olJ581-LwoOrqh-fJC1X3sK_pHL5QiX3JnTD5cI3ALyG07tkutpUGaM5PjxsTdE42poivhZy41hHV_F1MsqqZ2ftZjxPbrh6EbJZ5cVyUXTSGb-KZy4LDjsKyd10HNCMV6KWjHsRLegTX_NCuUi85rPB8DppgXNJGcR92AUNJpPb4RY0yHPBqBL7sOnsdp5MpVCcqUwUdlcX5dSyl2rMWS0ztdnPLx4P72bjpDF7kSiy7s7zya8EPt_aMapzlZU5f82Kp86uw8vxKIFZejFb8WWdd1oSRYNpYibqtZE6KJzw3-jut57yJziYuobZyR9B6lqOU2KSPUoK6dyWXFIFVXnxplJ8XR1hB-BvYy_Yr_0iDpKLLOfWey_T-yhI7jOp6kOEtqUEbR2xAjo9HOhtkBxq7PFhmVzDbq7hp7mGX-Yafp1reDzX48MYlGUOqkcd7PR_MJ0GiWP0gocdY7hjDHeNvR1jr3tAnJ56BzTvXcDBZgBa7t7Z2c93EICR0sJ_x1PL-4GnFXwjZ-EHemNctPiti1U-Rx8dykBQ-BZh5Y8A7ehk1mp4m45Rt3W95zJLN3uhUdU2XV0PmiFPJ6yrYzc0js66NvOzpRoAKrgNXbZxXdk2VTPGqwoRaDAQq1iLmInaNEV3rU3NsPaqUCBIZqhQWIlBh4G8jTv_V_NKNTtgYAMEtQEQeNwFYvptKoEZ2AGYzdPpCWINr7tove4U4NJt21rkMARBttoQd5WuXtcbtKDeAWvoEkJtcjx89TPLaVWNeOqtmhdtmuV5_yRNGVykUhJeeP2TXq9n789esqVa9cPydS8Ab1-NJgJjGOM7EfLsUVStNz9P0-9407Jsc-fnX-7seCM5CbCQIAsIjK5thgvS6iBaXQSVR4yKCEiF6AES5AZpmEQaqrZ9cYMBFQmwDEGB8Q4IEBPWQlwLiaWKbonriCQgSAGiJw1F-8Rfc7mm2RL-S70hduGrFZxAC78Pt0ueUpAqHoYfAKW1EvGmYH5fyZoTX4r6aeX3U5pX8FSXSzhmRhmF83TdQEpa_BFibUEf_wFi8udM)
 
 In an exokernel, the kernel's primary responsibilities are:
 
@@ -102,25 +16,7 @@ In an exokernel, the kernel's primary responsibilities are:
 Applications then implement their own resource management policies and abstractions on top of the low-level interfaces provided by the exokernel. This allows applications to customize resource management to their specific needs, rather than being constrained by a one-size-fits-all approach.
 
 ### Architecture of Exokernel
-
-```mermaid
-graph TD
-    subgraph User Mode
-        Application1(Application 1)
-        Application2(Application 2)
-        Application3(Application 3)
-    end
-    subgraph Kernel Mode
-        Exokernel(Exokernel)
-        Hardware(Hardware)
-    end
-    
-    Application1 --> Exokernel
-    Application2 --> Exokernel
-    Application3 --> Exokernel
-    
-    Exokernel --> Hardware
-```
+[![](https://mermaid.ink/img/pako:eNqFkU1rwzAMhv-K0SmF9NDklsNg0EFh7LTuMnzRYqUJiz9wbLYR8t_nNh9LskB1ENKrB_m13UKuBUEGF4umZOcjVyxE4z964a0hy14C0uvXeDSmrnJ0lVaHaNaww24TShZQsg2lCygdIFJi5eeZrKJ65ejpW3_e9GiqZqec0IovtBSNxXp5n-fXYvv9w9_Wf_Pkzjzdmvd5Em_I6AhikGQlViL8RHslObiSJHHIQimoQF87Dlx1AUXv9OuPyiFz1lMMVvtLCVmBdRM6bwQ6OlYYHkyOiEH1rrUcoO4XegyhIQ?type=png)](https://mermaid.live/edit#pako:eNqFkU1rwzAMhv-K0SmF9NDklsNg0EFh7LTuMnzRYqUJiz9wbLYR8t_nNh9LskB1ENKrB_m13UKuBUEGF4umZOcjVyxE4z964a0hy14C0uvXeDSmrnJ0lVaHaNaww24TShZQsg2lCygdIFJi5eeZrKJ65ejpW3_e9GiqZqec0IovtBSNxXp5n-fXYvv9w9_Wf_Pkzjzdmvd5Em_I6AhikGQlViL8RHslObiSJHHIQimoQF87Dlx1AUXv9OuPyiFz1lMMVvtLCVmBdRM6bwQ6OlYYHkyOiEH1rrUcoO4XegyhIQ)
 
 The key components of an exokernel system are:
 
