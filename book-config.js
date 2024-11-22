@@ -27,15 +27,15 @@ const bookConfig = {
             pages: [
                 {
                     title: "Introduction to OS Architecture",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Introduction to OS Architecture.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Introduction-to-OS-Architecture.md"
                 },
                 {
                     title: "Monolithic Kernel",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Monolithic Kernel.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Monolithic-Kernel.md"
                 },
                 {
                     title: "Case Study: Traditional Unix Architecture",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Traditional Unix Architecture.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Traditional-Unix-Architecture.md"
                 },
                 {
                     title: "Microkernels",
@@ -43,7 +43,7 @@ const bookConfig = {
                 },
                 {
                     title: "Case Study: Mach Kernel Architecture",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Mach Kernel Architecture.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/CaseStudies/Mach-Kernel-Architecture.md"
                 },
                 {
                     title: "Hybrid Kernel Architecture",
@@ -63,12 +63,12 @@ const bookConfig = {
                 },
                 {
                     title: "Virtual Machines as an OS Pattern",
-                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Virtual Machines as an OS Pattern.md"
+                    path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Virtual-Machines-as-an-OS-Pattern.md"
                 },
                 {
                     title: "Operating System Layer Architecture",
                     path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/Layered-Systems.md"
-                }
+                },
                 {
                     title: "Real Time Operating Systems",
                     path: "/myJourneyOfBuildingOS/Ch-2-OS-Architecture-Patterns/RTOS.md"
