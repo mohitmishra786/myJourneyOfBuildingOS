@@ -10,7 +10,7 @@ An operating system (OS) serves as the fundamental bridge between computer hardw
 
 System calls are the fundamental interface between an application and the operating system kernel. They provide a way for programs to request services from the operating system.
 
-![history](/myJourneyOfBuildingOS/images/systemArchOfKernelAndUserSpace.png)
+![history](/images/systemArchOfKernelAndUserSpace.png)
 
 ### Categories of System Calls:
 
