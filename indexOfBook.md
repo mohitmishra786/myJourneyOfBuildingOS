@@ -21,7 +21,8 @@
     * Adaptive and Reflective Architectures
     * Security in OS Architecture
     * Future Trends in OS Architectures
-4. **Computer System Architecture**
+
+3. **Computer System Architecture**
     * Von Neumann Architecture
     * Instruction Execution Cycle
     * Privilege Levels and Protection Rings
@@ -29,7 +30,7 @@
     * I/O Subsystems
     * Interrupt Handling and DMA
 
-5. **Process Management**
+4. **Process Management**
     * Process Concepts and States
     * Process Control Block (PCB)
     * Context Switching
@@ -37,7 +38,7 @@
     * Inter-Process Communication (IPC)
     * POSIX Process Management APIs
 
-6. **Thread Management**
+5. **Thread Management**
     * Thread Models and Implementation
     * User-level vs Kernel-level Threads
     * Thread Scheduling
