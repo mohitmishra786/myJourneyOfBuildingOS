@@ -57,7 +57,6 @@ PriorityScheduler --> PriorityManager : uses
 ### Priority Scheduling Implementation
 
 ```c
-// Priority-based scheduling implementation
 typedef struct {
     process_t **priority_queues[MAX_PRIORITY_LEVELS];
     int queue_sizes[MAX_PRIORITY_LEVELS];
@@ -67,7 +66,6 @@ typedef struct {
     int aging_increment;
 } priority_scheduler_t;
 
-// Initialize priority scheduler
 priority_scheduler_t* init_priority_scheduler(bool enable_aging) {
     priority_scheduler_t *scheduler = malloc(sizeof(priority_scheduler_t));
     
@@ -78,797 +76,569 @@ priority_scheduler_t* init_priority_scheduler(bool enable_aging) {
     }
     
     scheduler->aging_enabled = enable_aging;
-    scheduler->aging_threshold = 5;  // Time units before aging
-    scheduler->aging_increment = 1;  // Priority boost amount
+    scheduler->aging_threshold = 5;
+    scheduler->aging_increment = 1;
     
     return scheduler;
 }
 
-// Add process to appropriate priority queue
 void enqueue_by_priority(priority_scheduler_t *scheduler, process_t *process) {
-    int priority_level = process->priority - 1; // Convert to 0-based index
+    int priority_level = process->priority - 1;
     
     if (priority_level >= 0 && priority_level < MAX_PRIORITY_LEVELS) {
         int size = scheduler->queue_sizes[priority_level];
         scheduler->priority_queues[priority_level][size] = process;
         scheduler->queue_sizes[priority_level]++;
-        
-        printf("Process %s added to priority queue %d\n", 
-               process->name, process->priority);
     }
 }
 
-// Select highest priority process
-process_t* select_highest_priority_process(priority_scheduler_t *scheduler, int current_time) {
+process_t* select_highest_priority_process(priority_scheduler_t *scheduler) {
     for (int priority = 0; priority < MAX_PRIORITY_LEVELS; priority++) {
         if (scheduler->queue_sizes[priority] > 0) {
-            // Find earliest arriving process in this priority level
-            process_t *selected = NULL;
-            int selected_index = -1;
-            int earliest_arrival = INT_MAX;
+            process_t *selected = scheduler->priority_queues[priority][0];
             
-            for (int i = 0; i < scheduler->queue_sizes[priority]; i++) {
-                process_t *process = scheduler->priority_queues[priority][i];
-                if (process->arrival_time <= current_time && 
-                    process->arrival_time < earliest_arrival) {
-                    selected = process;
-                    selected_index = i;
-                    earliest_arrival = process->arrival_time;
-                }
+            for (int i = 0; i < scheduler->queue_sizes[priority] - 1; i++) {
+                scheduler->priority_queues[priority][i] = 
+                    scheduler->priority_queues[priority][i + 1];
             }
+            scheduler->queue_sizes[priority]--;
             
-            if (selected != NULL) {
-                // Remove from queue
-                for (int i = selected_index; i < scheduler->queue_sizes[priority] - 1; i++) {
-                    scheduler->priority_queues[priority][i] = 
-                        scheduler->priority_queues[priority][i + 1];
-                }
-                scheduler->queue_sizes[priority]--;
-                return selected;
-            }
+            return selected;
         }
     }
     return NULL;
 }
 
-// Age priorities to prevent starvation
 void age_process_priorities(priority_scheduler_t *scheduler, int current_time) {
     if (!scheduler->aging_enabled) return;
     
     for (int priority = 1; priority < MAX_PRIORITY_LEVELS; priority++) {
         for (int i = 0; i < scheduler->queue_sizes[priority]; i++) {
             process_t *process = scheduler->priority_queues[priority][i];
+            int waiting_time = current_time - process->last_scheduled_time;
             
-            int waiting_time = current_time - process->arrival_time;
             if (waiting_time >= scheduler->aging_threshold) {
-                // Move process to higher priority queue
-                scheduler->priority_queues[priority][i] = 
-                    scheduler->priority_queues[priority][scheduler->queue_sizes[priority] - 1];
-                scheduler->queue_sizes[priority]--;
-                
-                process->priority--;
-                if (process->priority < 1) process->priority = 1;
-                
-                enqueue_by_priority(scheduler, process);
-                
-                printf("Process %s aged to priority %d (waited %d time units)\n",
-                       process->name, process->priority, waiting_time);
-                i--; // Adjust index after removal
+                process->priority = (process->priority > 1) ? 
+                                  process->priority - scheduler->aging_increment : 1;
+                process->last_scheduled_time = current_time;
             }
         }
     }
 }
 
-// Priority scheduling with aging
 void schedule_priority_with_aging(scheduler_context_t *ctx) {
-    printf("=== Priority Scheduling with Aging ===\n");
-    
     priority_scheduler_t *scheduler = init_priority_scheduler(true);
-    ctx->current_time = 0;
-    int completed = 0;
-    bool *is_completed = calloc(ctx->process_count, sizeof(bool));
-    bool *is_queued = calloc(ctx->process_count, sizeof(bool));
     
-    while (completed < ctx->process_count) {
-        // Add newly arrived processes to priority queues
-        for (int i = 0; i < ctx->process_count; i++) {
-            if (!is_completed[i] && !is_queued[i] && 
-                ctx->processes[i].arrival_time <= ctx->current_time) {
-                enqueue_by_priority(scheduler, &ctx->processes[i]);
-                is_queued[i] = true;
-            }
+    ctx->current_time = 0;
+    bool *completed = calloc(ctx->process_count, sizeof(bool));
+    int completed_count = 0;
+    int next_arrival_index = 0;
+    
+    qsort(ctx->processes, ctx->process_count, sizeof(process_t), compare_arrival_time);
+    
+    while (completed_count < ctx->process_count) {
+        while (next_arrival_index < ctx->process_count && 
+               ctx->processes[next_arrival_index].arrival_time <= ctx->current_time) {
+            process_t *arriving_process = &ctx->processes[next_arrival_index];
+            arriving_process->last_scheduled_time = ctx->current_time;
+            enqueue_by_priority(scheduler, arriving_process);
+            next_arrival_index++;
         }
         
-        // Age processes to prevent starvation
         age_process_priorities(scheduler, ctx->current_time);
         
-        // Select highest priority process
-        process_t *current_process = select_highest_priority_process(scheduler, ctx->current_time);
+        process_t *current_process = select_highest_priority_process(scheduler);
         
         if (current_process == NULL) {
-            // No process ready, advance to next arrival
-            int next_arrival = INT_MAX;
-            for (int i = 0; i < ctx->process_count; i++) {
-                if (!is_completed[i] && ctx->processes[i].arrival_time > ctx->current_time) {
-                    if (ctx->processes[i].arrival_time < next_arrival) {
-                        next_arrival = ctx->processes[i].arrival_time;
-                    }
-                }
-            }
-            if (next_arrival != INT_MAX) {
-                printf("CPU idle from time %d to %d\n", ctx->current_time, next_arrival);
-                ctx->current_time = next_arrival;
+            if (next_arrival_index < ctx->process_count) {
+                ctx->current_time = ctx->processes[next_arrival_index].arrival_time;
             }
             continue;
         }
         
-        // Execute the selected process
-        current_process->start_time = ctx->current_time;
-        current_process->response_time = ctx->current_time - current_process->arrival_time;
-        
-        printf("Time %d: Process %s (priority %d) starts execution\n",
-               ctx->current_time, current_process->name, current_process->priority);
+        if (current_process->first_execution) {
+            current_process->start_time = ctx->current_time;
+            current_process->response_time = ctx->current_time - current_process->arrival_time;
+            current_process->first_execution = false;
+        }
         
         ctx->current_time += current_process->burst_time;
         current_process->completion_time = ctx->current_time;
         current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
         current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
         
-        printf("Time %d: Process %s completes (waited: %d, turnaround: %d)\n",
-               ctx->current_time, current_process->name,
-               current_process->waiting_time, current_process->turnaround_time);
-        
-        // Mark as completed
         for (int i = 0; i < ctx->process_count; i++) {
             if (&ctx->processes[i] == current_process) {
-                is_completed[i] = true;
+                completed[i] = true;
+                completed_count++;
                 break;
             }
         }
-        completed++;
     }
     
-    free(is_completed);
-    free(is_queued);
-    // TODO: Free scheduler memory
+    free(completed);
 }
 ```
 
 ## Multi-Level Queue Scheduling
 
-Multi-level queue scheduling partitions processes into distinct categories, each with its own scheduling algorithm and priority level. This hierarchical approach enables different process types to be handled with specialized scheduling strategies while maintaining overall system organization.
+Multi-level queue scheduling partitions processes into distinct queues based on process characteristics such as priority, type, or resource requirements. Each queue can employ different scheduling algorithms optimized for its specific process types, enabling system-wide optimization across diverse workload patterns.
 
-The partitioning typically reflects process characteristics such as interactive versus batch processes, system versus user processes, or foreground versus background tasks. Each queue can employ different scheduling algorithms optimized for its specific process type.
+Process classification typically separates system processes, interactive processes, and batch processes into different queues with varying priorities and scheduling policies. Interactive processes receive higher priority and shorter time quanta to ensure responsiveness, while batch processes operate with longer time slices to maximize throughput.
 
-Queue priorities determine which queue receives CPU time when multiple queues contain ready processes. Fixed-priority assignment ensures predictable behavior but may lead to starvation of lower-priority queues, while time-slicing between queues provides fairness at the cost of some overhead.
+Queue priorities remain fixed, with higher-priority queues receiving CPU attention before lower-priority queues. This rigid priority structure ensures system processes maintain control while potentially causing starvation of lower-priority queues under heavy high-priority loads.
 
 ```plantuml
 @startuml
 title "Multi-Level Queue Structure"
 
-class MultiLevelQueueScheduler {
-    +system_processes: ProcessQueue
-    +interactive_processes: ProcessQueue  
-    +batch_processes: ProcessQueue
+class MultilevelScheduler {
+    +system_queue: ProcessQueue
+    +interactive_queue: ProcessQueue
+    +batch_queue: ProcessQueue
     +queue_priorities[]: int
-    +time_slices[]: int
     --
-    +assign_to_queue(): void
-    +select_active_queue(): ProcessQueue
-    +schedule_from_queue(): Process
-    +allocate_time_slice(): void
+    +classify_process(): QueueType
+    +schedule_from_highest_queue(): Process
+    +apply_queue_specific_algorithm(): void
 }
 
 class QueueManager {
-    +queue_algorithms[]: SchedulingAlgorithm
-    +queue_priorities[]: int
-    +starvation_prevention: bool
+    +queue_algorithms[]: Algorithm
+    +time_quantums[]: int
+    +queue_policies[]: Policy
     --
-    +manage_queue_scheduling(): void
-    +prevent_starvation(): void
-    +balance_queue_access(): void
+    +assign_algorithm(): Algorithm
+    +manage_time_slice(): void
+    +enforce_queue_policy(): void
 }
 
-MultiLevelQueueScheduler --> QueueManager : coordinates
+MultilevelScheduler --> QueueManager : uses
 @enduml
 ```
 
 ### Multi-Level Queue Implementation
 
 ```c
-// Multi-level queue categories
 typedef enum {
-    QUEUE_SYSTEM = 0,      // Highest priority - system processes
-    QUEUE_INTERACTIVE = 1,  // Medium priority - interactive processes  
-    QUEUE_BATCH = 2,       // Lowest priority - batch processes
+    QUEUE_SYSTEM = 0,
+    QUEUE_INTERACTIVE = 1,
+    QUEUE_BATCH = 2,
     NUM_QUEUE_LEVELS = 3
 } queue_level_t;
 
-// Multi-level queue scheduler structure
 typedef struct {
     process_t **queues[NUM_QUEUE_LEVELS];
     int queue_sizes[NUM_QUEUE_LEVELS];
     int queue_capacities[NUM_QUEUE_LEVELS];
-    scheduling_algorithm_t queue_algorithms[NUM_QUEUE_LEVELS];
-    int time_slices[NUM_QUEUE_LEVELS];
-    int current_time_slice[NUM_QUEUE_LEVELS];
-    bool time_slice_sharing;
+    int time_quantums[NUM_QUEUE_LEVELS];
+    int queue_priorities[NUM_QUEUE_LEVELS];
 } multilevel_scheduler_t;
 
-// Initialize multi-level queue scheduler
-multilevel_scheduler_t* init_multilevel_scheduler(bool enable_time_sharing) {
+multilevel_scheduler_t* init_multilevel_scheduler(void) {
     multilevel_scheduler_t *scheduler = malloc(sizeof(multilevel_scheduler_t));
     
     for (int i = 0; i < NUM_QUEUE_LEVELS; i++) {
         scheduler->queues[i] = malloc(MAX_PROCESSES * sizeof(process_t*));
         scheduler->queue_sizes[i] = 0;
         scheduler->queue_capacities[i] = MAX_PROCESSES;
-        scheduler->current_time_slice[i] = 0;
     }
     
-    // Configure queue algorithms and time slices
-    scheduler->queue_algorithms[QUEUE_SYSTEM] = ALGORITHM_FCFS;
-    scheduler->queue_algorithms[QUEUE_INTERACTIVE] = ALGORITHM_ROUND_ROBIN;
-    scheduler->queue_algorithms[QUEUE_BATCH] = ALGORITHM_SJF;
+    scheduler->time_quantums[QUEUE_SYSTEM] = 1;
+    scheduler->time_quantums[QUEUE_INTERACTIVE] = 4;
+    scheduler->time_quantums[QUEUE_BATCH] = 8;
     
-    scheduler->time_slices[QUEUE_SYSTEM] = 8;      // System processes get larger slice
-    scheduler->time_slices[QUEUE_INTERACTIVE] = 4; // Interactive processes get medium slice
-    scheduler->time_slices[QUEUE_BATCH] = 12;      // Batch processes get largest slice when scheduled
-    
-    scheduler->time_slice_sharing = enable_time_sharing;
+    scheduler->queue_priorities[QUEUE_SYSTEM] = 0;
+    scheduler->queue_priorities[QUEUE_INTERACTIVE] = 1;
+    scheduler->queue_priorities[QUEUE_BATCH] = 2;
     
     return scheduler;
 }
 
-// Assign process to appropriate queue based on characteristics
 queue_level_t classify_process(process_t *process) {
-    // Simple classification based on priority and burst time
-    if (process->priority <= 2) {
-        return QUEUE_SYSTEM;  // High priority = system process
-    } else if (process->burst_time <= 5) {
-        return QUEUE_INTERACTIVE;  // Short burst = interactive process
+    if (process->type == PROCESS_SYSTEM) {
+        return QUEUE_SYSTEM;
+    } else if (process->type == PROCESS_INTERACTIVE) {
+        return QUEUE_INTERACTIVE;
     } else {
-        return QUEUE_BATCH;  // Long burst = batch process
+        return QUEUE_BATCH;
     }
 }
 
-// Add process to appropriate queue
 void add_to_multilevel_queue(multilevel_scheduler_t *scheduler, process_t *process) {
     queue_level_t queue_level = classify_process(process);
-    
     int size = scheduler->queue_sizes[queue_level];
-    scheduler->queues[queue_level][size] = process;
-    scheduler->queue_sizes[queue_level]++;
     
-    const char *queue_names[] = {"System", "Interactive", "Batch"};
-    printf("Process %s assigned to %s queue\n", process->name, queue_names[queue_level]);
+    if (size < scheduler->queue_capacities[queue_level]) {
+        scheduler->queues[queue_level][size] = process;
+        scheduler->queue_sizes[queue_level]++;
+    }
 }
 
-// Select process from highest priority non-empty queue
-process_t* select_from_multilevel_queue(multilevel_scheduler_t *scheduler, int current_time) {
+process_t* select_from_multilevel_queue(multilevel_scheduler_t *scheduler) {
     for (int level = 0; level < NUM_QUEUE_LEVELS; level++) {
         if (scheduler->queue_sizes[level] > 0) {
-            // Check if this queue has available time slice (if time sharing enabled)
-            if (scheduler->time_slice_sharing && 
-                scheduler->current_time_slice[level] >= scheduler->time_slices[level]) {
-                continue; // This queue has exhausted its time slice
-            }
+            process_t *selected = scheduler->queues[level][0];
             
-            // Apply queue-specific scheduling algorithm
-            switch (scheduler->queue_algorithms[level]) {
-                case ALGORITHM_FCFS:
-                    // Return first process (FCFS)
-                    return scheduler->queues[level][0];
-                    
-                case ALGORITHM_ROUND_ROBIN:
-                    // Return first process and rotate queue
-                    return scheduler->queues[level][0];
-                    
-                case ALGORITHM_SJF:
-                    // Find shortest job in this queue
-                    {
-                        process_t *shortest = scheduler->queues[level][0];
-                        int shortest_index = 0;
-                        
-                        for (int i = 1; i < scheduler->queue_sizes[level]; i++) {
-                            if (scheduler->queues[level][i]->burst_time < shortest->burst_time) {
-                                shortest = scheduler->queues[level][i];
-                                shortest_index = i;
-                            }
-                        }
-                        
-                        // Move shortest job to front for easy removal
-                        if (shortest_index != 0) {
-                            process_t *temp = scheduler->queues[level][0];
-                            scheduler->queues[level][0] = shortest;
-                            scheduler->queues[level][shortest_index] = temp;
-                        }
-                        
-                        return shortest;
-                    }
-                    
-                default:
-                    return scheduler->queues[level][0];
+            for (int i = 0; i < scheduler->queue_sizes[level] - 1; i++) {
+                scheduler->queues[level][i] = scheduler->queues[level][i + 1];
             }
+            scheduler->queue_sizes[level]--;
+            
+            return selected;
         }
     }
     return NULL;
 }
 
-// Remove process from its queue
 void remove_from_multilevel_queue(multilevel_scheduler_t *scheduler, process_t *process) {
-    for (int level = 0; level < NUM_QUEUE_LEVELS; level++) {
-        for (int i = 0; i < scheduler->queue_sizes[level]; i++) {
-            if (scheduler->queues[level][i] == process) {
-                // Shift remaining processes
-                for (int j = i; j < scheduler->queue_sizes[level] - 1; j++) {
-                    scheduler->queues[level][j] = scheduler->queues[level][j + 1];
-                }
-                scheduler->queue_sizes[level]--;
-                return;
+    queue_level_t queue_level = classify_process(process);
+    
+    for (int i = 0; i < scheduler->queue_sizes[queue_level]; i++) {
+        if (scheduler->queues[queue_level][i] == process) {
+            for (int j = i; j < scheduler->queue_sizes[queue_level] - 1; j++) {
+                scheduler->queues[queue_level][j] = scheduler->queues[queue_level][j + 1];
             }
+            scheduler->queue_sizes[queue_level]--;
+            break;
         }
     }
 }
 
-// Multi-level queue scheduling with time slice sharing
 void schedule_multilevel_queue(scheduler_context_t *ctx) {
-    printf("=== Multi-Level Queue Scheduling ===\n");
+    multilevel_scheduler_t *scheduler = init_multilevel_scheduler();
     
-    multilevel_scheduler_t *scheduler = init_multilevel_scheduler(true);
     ctx->current_time = 0;
-    int completed = 0;
-    bool *is_completed = calloc(ctx->process_count, sizeof(bool));
-    bool *is_queued = calloc(ctx->process_count, sizeof(bool));
+    bool *completed = calloc(ctx->process_count, sizeof(bool));
+    int completed_count = 0;
+    int next_arrival_index = 0;
     
-    while (completed < ctx->process_count) {
-        // Add newly arrived processes
-        for (int i = 0; i < ctx->process_count; i++) {
-            if (!is_completed[i] && !is_queued[i] && 
-                ctx->processes[i].arrival_time <= ctx->current_time) {
-                add_to_multilevel_queue(scheduler, &ctx->processes[i]);
-                is_queued[i] = true;
-            }
+    for (int i = 0; i < ctx->process_count; i++) {
+        ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
+        ctx->processes[i].first_execution = true;
+    }
+    
+    qsort(ctx->processes, ctx->process_count, sizeof(process_t), compare_arrival_time);
+    
+    while (completed_count < ctx->process_count) {
+        while (next_arrival_index < ctx->process_count && 
+               ctx->processes[next_arrival_index].arrival_time <= ctx->current_time) {
+            add_to_multilevel_queue(scheduler, &ctx->processes[next_arrival_index]);
+            next_arrival_index++;
         }
         
-        // Reset time slices periodically (every 20 time units)
-        if (ctx->current_time % 20 == 0 && ctx->current_time > 0) {
-            for (int level = 0; level < NUM_QUEUE_LEVELS; level++) {
-                scheduler->current_time_slice[level] = 0;
-            }
-            printf("Time %d: Time slices reset for all queues\n", ctx->current_time);
-        }
-        
-        // Select process from highest priority queue
-        process_t *current_process = select_from_multilevel_queue(scheduler, ctx->current_time);
+        process_t *current_process = select_from_multilevel_queue(scheduler);
         
         if (current_process == NULL) {
-            // No process ready, advance time
-            int next_arrival = INT_MAX;
-            for (int i = 0; i < ctx->process_count; i++) {
-                if (!is_completed[i] && ctx->processes[i].arrival_time > ctx->current_time) {
-                    if (ctx->processes[i].arrival_time < next_arrival) {
-                        next_arrival = ctx->processes[i].arrival_time;
-                    }
-                }
-            }
-            if (next_arrival != INT_MAX) {
-                ctx->current_time = next_arrival;
+            if (next_arrival_index < ctx->process_count) {
+                ctx->current_time = ctx->processes[next_arrival_index].arrival_time;
             }
             continue;
         }
         
-        // Determine execution time based on queue algorithm
-        queue_level_t process_queue = classify_process(current_process);
-        int execution_time;
-        
-        if (scheduler->queue_algorithms[process_queue] == ALGORITHM_ROUND_ROBIN) {
-            execution_time = (current_process->burst_time < 4) ? current_process->burst_time : 4;
-        } else {
-            execution_time = current_process->burst_time; // Run to completion
-        }
-        
-        // Record timing information
-        if (current_process->start_time == 0) {
+        if (current_process->first_execution) {
             current_process->start_time = ctx->current_time;
             current_process->response_time = ctx->current_time - current_process->arrival_time;
+            current_process->first_execution = false;
         }
         
-        printf("Time %d: Process %s executes for %d time units (queue: %s)\n",
-               ctx->current_time, current_process->name, execution_time,
-               (process_queue == QUEUE_SYSTEM) ? "System" :
-               (process_queue == QUEUE_INTERACTIVE) ? "Interactive" : "Batch");
+        queue_level_t queue_level = classify_process(current_process);
+        int time_quantum = scheduler->time_quantums[queue_level];
         
-        // Execute process
+        int execution_time = (current_process->remaining_time < time_quantum) ?
+                           current_process->remaining_time : time_quantum;
+        
+        current_process->remaining_time -= execution_time;
         ctx->current_time += execution_time;
-        current_process->burst_time -= execution_time;
-        scheduler->current_time_slice[process_queue] += execution_time;
         
-        // Check if process completed
-        if (current_process->burst_time == 0) {
+        while (next_arrival_index < ctx->process_count && 
+               ctx->processes[next_arrival_index].arrival_time <= ctx->current_time) {
+            add_to_multilevel_queue(scheduler, &ctx->processes[next_arrival_index]);
+            next_arrival_index++;
+        }
+        
+        if (current_process->remaining_time == 0) {
             current_process->completion_time = ctx->current_time;
             current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
-            current_process->waiting_time = current_process->turnaround_time - 
-                (current_process->completion_time - current_process->start_time);
-            
-            printf("Time %d: Process %s completes\n", ctx->current_time, current_process->name);
-            
-            remove_from_multilevel_queue(scheduler, current_process);
+            current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
             
             for (int i = 0; i < ctx->process_count; i++) {
                 if (&ctx->processes[i] == current_process) {
-                    is_completed[i] = true;
+                    completed[i] = true;
+                    completed_count++;
                     break;
                 }
             }
-            completed++;
-        } else if (scheduler->queue_algorithms[process_queue] == ALGORITHM_ROUND_ROBIN) {
-            // Time quantum expired for round robin queue, move to end
-            remove_from_multilevel_queue(scheduler, current_process);
-            scheduler->queues[process_queue][scheduler->queue_sizes[process_queue]] = current_process;
-            scheduler->queue_sizes[process_queue]++;
-            
-            printf("Process %s moved to end of %s queue (remaining: %d)\n",
-                   current_process->name,
-                   (process_queue == QUEUE_INTERACTIVE) ? "Interactive" : "System",
-                   current_process->burst_time);
+        } else {
+            add_to_multilevel_queue(scheduler, current_process);
         }
     }
     
-    free(is_completed);
-    free(is_queued);
+    free(completed);
 }
 ```
 
 ## Multi-Level Feedback Queue Scheduling
 
-Multi-Level Feedback Queue (MLFQ) scheduling represents one of the most sophisticated and widely used scheduling algorithms in modern operating systems. MLFQ combines the benefits of multi-level queues with dynamic process migration between queue levels based on observed behavior patterns.
+Multi-Level Feedback Queue scheduling combines the flexibility of multiple queue levels with dynamic process migration based on behavior patterns. Processes start in the highest priority queue and may be demoted to lower priority queues based on their CPU usage patterns, enabling automatic adaptation to process characteristics.
 
-The algorithm typically uses multiple priority levels with different scheduling algorithms and time quantums. Processes start at the highest priority level and migrate to lower levels if they exceed their time quantum, while I/O-bound processes can be promoted to higher levels to maintain responsiveness.
+MLFQ typically uses different time quantums for each queue level, with shorter quantums for higher priority queues to favor interactive processes and longer quantums for lower priority queues to improve throughput for CPU-intensive processes.
 
-MLFQ addresses the challenge of optimizing for both interactive responsiveness and batch throughput without requiring a priori knowledge of process characteristics. The feedback mechanism allows the scheduler to learn process behavior and adapt scheduling decisions accordingly.
+Process promotion mechanisms, such as periodic priority boosts, prevent starvation of lower-priority processes while maintaining responsiveness for interactive workloads. This adaptive behavior makes MLFQ suitable for general-purpose systems with diverse process types.
 
 ```plantuml
 @startuml
 title "Multi-Level Feedback Queue System"
 
 class MLFQScheduler {
-    +priority_levels[]: FeedbackQueue
+    +queue_levels[]: QueueLevel
     +num_levels: int
-    +promotion_threshold: int
+    +boost_interval: int
     +demotion_threshold: int
     --
-    +schedule_process(): Process
-    +promote_process(): void
+    +add_new_process(): void
     +demote_process(): void
-    +age_processes(): void
+    +promote_process(): void
+    +perform_priority_boost(): void
 }
 
-class FeedbackQueue {
-    +priority_level: int
-    +time_quantum: int
-    +algorithm: SchedulingAlgorithm
+class QueueLevel {
     +processes[]: Process
+    +time_quantum: int
+    +priority_level: int
+    +algorithm: SchedulingAlgorithm
     --
-    +add_process(): void
-    +remove_process(): Process
-    +adjust_quantum(): void
+    +schedule_process(): Process
+    +manage_time_quantum(): void
+    +check_demotion_criteria(): bool
 }
 
-MLFQScheduler *-- FeedbackQueue : manages
+MLFQScheduler --> QueueLevel : manages
 @enduml
 ```
 
 ### Multi-Level Feedback Queue Implementation
 
 ```c
-// MLFQ queue configuration
 typedef struct {
-    int priority_level;
-    int time_quantum;
-    scheduling_algorithm_t algorithm;
     process_t **processes;
-    int size;
     int capacity;
-    int quantum_used;
+    int size;
+    int time_quantum;
+    int priority_level;
 } mlfq_level_t;
 
-// MLFQ scheduler structure
 typedef struct {
     mlfq_level_t *levels;
     int num_levels;
-    int promotion_threshold;   // Time before promoting I/O bound processes
-    int aging_threshold;      // Time before aging low-priority processes
-    int boost_interval;       // Periodic priority boost interval
+    int boost_interval;
     int last_boost_time;
+    int demotion_threshold;
 } mlfq_scheduler_t;
 
-// Initialize MLFQ scheduler
 mlfq_scheduler_t* init_mlfq_scheduler(int num_levels) {
     mlfq_scheduler_t *scheduler = malloc(sizeof(mlfq_scheduler_t));
     scheduler->num_levels = num_levels;
     scheduler->levels = malloc(num_levels * sizeof(mlfq_level_t));
-    scheduler->promotion_threshold = 10;
-    scheduler->aging_threshold = 20;
     scheduler->boost_interval = 50;
     scheduler->last_boost_time = 0;
+    scheduler->demotion_threshold = 1;
     
-    // Configure each level with decreasing priority and increasing quantum
     for (int i = 0; i < num_levels; i++) {
-        mlfq_level_t *level = &scheduler->levels[i];
-        level->priority_level = i;
-        level->time_quantum = (i == 0) ? 2 : (i == 1) ? 4 : 8;  // Exponential increase
-        level->algorithm = ALGORITHM_ROUND_ROBIN;
-        level->processes = malloc(MAX_PROCESSES * sizeof(process_t*));
-        level->size = 0;
-        level->capacity = MAX_PROCESSES;
-        level->quantum_used = 0;
+        scheduler->levels[i].processes = malloc(MAX_PROCESSES * sizeof(process_t*));
+        scheduler->levels[i].capacity = MAX_PROCESSES;
+        scheduler->levels[i].size = 0;
+        scheduler->levels[i].time_quantum = (i == 0) ? 2 : (1 << i);
+        scheduler->levels[i].priority_level = i;
     }
-    
-    // Lowest level uses FCFS for long-running processes
-    scheduler->levels[num_levels - 1].algorithm = ALGORITHM_FCFS;
     
     return scheduler;
 }
 
-// Add new process to highest priority level
 void add_new_process_mlfq(mlfq_scheduler_t *scheduler, process_t *process) {
     mlfq_level_t *top_level = &scheduler->levels[0];
-    top_level->processes[top_level->size] = process;
-    top_level->size++;
     
-    process->current_queue_level = 0;
-    process->time_in_current_level = 0;
-    process->total_cpu_time = 0;
-    
-    printf("Process %s added to MLFQ level 0 (quantum: %d)\n", 
-           process->name, top_level->time_quantum);
+    if (top_level->size < top_level->capacity) {
+        top_level->processes[top_level->size++] = process;
+        process->queue_level = 0;
+        process->time_used_in_level = 0;
+    }
 }
 
-// Move process to lower priority level (demotion)
 void demote_process_mlfq(mlfq_scheduler_t *scheduler, process_t *process) {
-    int current_level = process->current_queue_level;
-    int new_level = (current_level < scheduler->num_levels - 1) ? current_level + 1 : current_level;
+    int current_level = process->queue_level;
     
-    if (new_level != current_level) {
-        // Remove from current level
-        mlfq_level_t *curr_level = &scheduler->levels[current_level];
-        for (int i = 0; i < curr_level->size; i++) {
-            if (curr_level->processes[i] == process) {
-                for (int j = i; j < curr_level->size - 1; j++) {
-                    curr_level->processes[j] = curr_level->processes[j + 1];
+    if (current_level < scheduler->num_levels - 1) {
+        mlfq_level_t *current_queue = &scheduler->levels[current_level];
+        mlfq_level_t *lower_queue = &scheduler->levels[current_level + 1];
+        
+        for (int i = 0; i < current_queue->size; i++) {
+            if (current_queue->processes[i] == process) {
+                for (int j = i; j < current_queue->size - 1; j++) {
+                    current_queue->processes[j] = current_queue->processes[j + 1];
                 }
-                curr_level->size--;
+                current_queue->size--;
                 break;
             }
         }
         
-        // Add to new level
-        mlfq_level_t *new_lvl = &scheduler->levels[new_level];
-        new_lvl->processes[new_lvl->size] = process;
-        new_lvl->size++;
-        
-        process->current_queue_level = new_level;
-        process->time_in_current_level = 0;
-        
-        printf("Process %s demoted to level %d (quantum: %d)\n",
-               process->name, new_level, new_lvl->time_quantum);
+        if (lower_queue->size < lower_queue->capacity) {
+            lower_queue->processes[lower_queue->size++] = process;
+            process->queue_level = current_level + 1;
+            process->time_used_in_level = 0;
+        }
     }
 }
 
-// Move process to higher priority level (promotion)
 void promote_process_mlfq(mlfq_scheduler_t *scheduler, process_t *process) {
-    int current_level = process->current_queue_level;
-    int new_level = (current_level > 0) ? current_level - 1 : 0;
+    int current_level = process->queue_level;
     
-    if (new_level != current_level) {
-        // Remove from current level
-        mlfq_level_t *curr_level = &scheduler->levels[current_level];
-        for (int i = 0; i < curr_level->size; i++) {
-            if (curr_level->processes[i] == process) {
-                for (int j = i; j < curr_level->size - 1; j++) {
-                    curr_level->processes[j] = curr_level->processes[j + 1];
+    if (current_level > 0) {
+        mlfq_level_t *current_queue = &scheduler->levels[current_level];
+        mlfq_level_t *higher_queue = &scheduler->levels[current_level - 1];
+        
+        for (int i = 0; i < current_queue->size; i++) {
+            if (current_queue->processes[i] == process) {
+                for (int j = i; j < current_queue->size - 1; j++) {
+                    current_queue->processes[j] = current_queue->processes[j + 1];
                 }
-                curr_level->size--;
+                current_queue->size--;
                 break;
             }
         }
         
-        // Add to new level
-        mlfq_level_t *new_lvl = &scheduler->levels[new_level];
-        new_lvl->processes[new_lvl->size] = process;
-        new_lvl->size++;
-        
-        process->current_queue_level = new_level;
-        process->time_in_current_level = 0;
-        
-        printf("Process %s promoted to level %d (quantum: %d)\n",
-               process->name, new_level, new_lvl->time_quantum);
+        if (higher_queue->size < higher_queue->capacity) {
+            higher_queue->processes[higher_queue->size++] = process;
+            process->queue_level = current_level - 1;
+            process->time_used_in_level = 0;
+        }
     }
 }
 
-// Perform periodic priority boost to prevent starvation
 void perform_priority_boost(mlfq_scheduler_t *scheduler, int current_time) {
     if (current_time - scheduler->last_boost_time >= scheduler->boost_interval) {
-        printf("Time %d: Performing priority boost for all processes\n", current_time);
-        
-        // Move all processes to top level
-        for (int level = 1; level < scheduler->num_levels; level++) {
-            mlfq_level_t *src_level = &scheduler->levels[level];
-            mlfq_level_t *top_level = &scheduler->levels[0];
-            
-            for (int i = 0; i < src_level->size; i++) {
-                process_t *process = src_level->processes[i];
-                
-                // Add to top level
-                top_level->processes[top_level->size] = process;
-                top_level->size++;
-                
-                process->current_queue_level = 0;
-                process->time_in_current_level = 0;
-                
-                printf("Process %s boosted to level 0\n", process->name);
-            }
-            
-            // Clear source level
-            src_level->size = 0;
-        }
-        
         scheduler->last_boost_time = current_time;
+        
+        for (int level = 1; level < scheduler->num_levels; level++) {
+            mlfq_level_t *current_queue = &scheduler->levels[level];
+            mlfq_level_t *top_queue = &scheduler->levels[0];
+            
+            while (current_queue->size > 0) {
+                process_t *process = current_queue->processes[0];
+                
+                for (int i = 0; i < current_queue->size - 1; i++) {
+                    current_queue->processes[i] = current_queue->processes[i + 1];
+                }
+                current_queue->size--;
+                
+                if (top_queue->size < top_queue->capacity) {
+                    top_queue->processes[top_queue->size++] = process;
+                    process->queue_level = 0;
+                    process->time_used_in_level = 0;
+                }
+            }
+        }
     }
 }
 
-// Select next process using MLFQ rules
-process_t* select_process_mlfq(mlfq_scheduler_t *scheduler, int current_time) {
-    // Check for priority boost
-    perform_priority_boost(scheduler, current_time);
-    
-    // Find highest priority level with ready processes
+process_t* select_process_mlfq(mlfq_scheduler_t *scheduler) {
     for (int level = 0; level < scheduler->num_levels; level++) {
-        mlfq_level_t *queue_level = &scheduler->levels[level];
+        mlfq_level_t *current_level = &scheduler->levels[level];
         
-        if (queue_level->size > 0) {
-            process_t *selected;
+        if (current_level->size > 0) {
+            process_t *selected = current_level->processes[0];
             
-            if (queue_level->algorithm == ALGORITHM_ROUND_ROBIN) {
-                // Round robin - select first process
-                selected = queue_level->processes[0];
-            } else {
-                // FCFS - select first process
-                selected = queue_level->processes[0];
+            for (int i = 0; i < current_level->size - 1; i++) {
+                current_level->processes[i] = current_level->processes[i + 1];
             }
+            current_level->size--;
             
             return selected;
         }
     }
-    
     return NULL;
 }
 
-// MLFQ scheduling with feedback
-void schedule_mlfq(scheduler_context_t *ctx) {
-    printf("=== Multi-Level Feedback Queue Scheduling ===\n");
+void schedule_mlfq(scheduler_context_t *ctx, int num_levels) {
+    mlfq_scheduler_t *scheduler = init_mlfq_scheduler(num_levels);
     
-    mlfq_scheduler_t *scheduler = init_mlfq_scheduler(3);
     ctx->current_time = 0;
-    int completed = 0;
-    bool *is_completed = calloc(ctx->process_count, sizeof(bool));
-    bool *is_queued = calloc(ctx->process_count, sizeof(bool));
+    bool *completed = calloc(ctx->process_count, sizeof(bool));
+    int completed_count = 0;
+    int next_arrival_index = 0;
     
-    // Initialize process fields for MLFQ
     for (int i = 0; i < ctx->process_count; i++) {
-        ctx->processes[i].current_queue_level = 0;
-        ctx->processes[i].time_in_current_level = 0;
-        ctx->processes[i].total_cpu_time = 0;
         ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
+        ctx->processes[i].first_execution = true;
+        ctx->processes[i].queue_level = 0;
+        ctx->processes[i].time_used_in_level = 0;
     }
     
-    while (completed < ctx->process_count) {
-        // Add newly arrived processes
-        for (int i = 0; i < ctx->process_count; i++) {
-            if (!is_completed[i] && !is_queued[i] && 
-                ctx->processes[i].arrival_time <= ctx->current_time) {
-                add_new_process_mlfq(scheduler, &ctx->processes[i]);
-                is_queued[i] = true;
-            }
+    qsort(ctx->processes, ctx->process_count, sizeof(process_t), compare_arrival_time);
+    
+    while (completed_count < ctx->process_count) {
+        while (next_arrival_index < ctx->process_count && 
+               ctx->processes[next_arrival_index].arrival_time <= ctx->current_time) {
+            add_new_process_mlfq(scheduler, &ctx->processes[next_arrival_index]);
+            next_arrival_index++;
         }
         
-        // Select process using MLFQ rules
-        process_t *current_process = select_process_mlfq(scheduler, ctx->current_time);
+        perform_priority_boost(scheduler, ctx->current_time);
+        
+        process_t *current_process = select_process_mlfq(scheduler);
         
         if (current_process == NULL) {
-            // No process ready
-            int next_arrival = INT_MAX;
-            for (int i = 0; i < ctx->process_count; i++) {
-                if (!is_completed[i] && ctx->processes[i].arrival_time > ctx->current_time) {
-                    if (ctx->processes[i].arrival_time < next_arrival) {
-                        next_arrival = ctx->processes[i].arrival_time;
-                    }
-                }
-            }
-            if (next_arrival != INT_MAX) {
-                ctx->current_time = next_arrival;
+            if (next_arrival_index < ctx->process_count) {
+                ctx->current_time = ctx->processes[next_arrival_index].arrival_time;
             }
             continue;
         }
         
-        // Record first execution
-        if (current_process->start_time == 0) {
+        if (current_process->first_execution) {
             current_process->start_time = ctx->current_time;
             current_process->response_time = ctx->current_time - current_process->arrival_time;
+            current_process->first_execution = false;
         }
         
-        // Determine execution time
-        int level = current_process->current_queue_level;
-        mlfq_level_t *queue_level = &scheduler->levels[level];
-        int execution_time;
+        int queue_level = current_process->queue_level;
+        int time_quantum = scheduler->levels[queue_level].time_quantum;
         
-        if (queue_level->algorithm == ALGORITHM_ROUND_ROBIN) {
-            execution_time = (current_process->remaining_time < queue_level->time_quantum) ?
-                            current_process->remaining_time : queue_level->time_quantum;
-        } else {
-            execution_time = current_process->remaining_time; // FCFS runs to completion
-        }
+        int execution_time = (current_process->remaining_time < time_quantum) ?
+                           current_process->remaining_time : time_quantum;
         
-        printf("Time %d: Process %s executes for %d time units (level %d)\n",
-               ctx->current_time, current_process->name, execution_time, level);
-        
-        // Execute process
-        ctx->current_time += execution_time;
         current_process->remaining_time -= execution_time;
-        current_process->time_in_current_level += execution_time;
-        current_process->total_cpu_time += execution_time;
+        current_process->time_used_in_level += execution_time;
+        ctx->current_time += execution_time;
         
-        // Check if process completed
+        while (next_arrival_index < ctx->process_count && 
+               ctx->processes[next_arrival_index].arrival_time <= ctx->current_time) {
+            add_new_process_mlfq(scheduler, &ctx->processes[next_arrival_index]);
+            next_arrival_index++;
+        }
+        
         if (current_process->remaining_time == 0) {
             current_process->completion_time = ctx->current_time;
             current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
             current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
             
-            printf("Time %d: Process %s completes\n", ctx->current_time, current_process->name);
-            
-            // Remove from current level
-            for (int i = 0; i < queue_level->size; i++) {
-                if (queue_level->processes[i] == current_process) {
-                    for (int j = i; j < queue_level->size - 1; j++) {
-                        queue_level->processes[j] = queue_level->processes[j + 1];
-                    }
-                    queue_level->size--;
-                    break;
-                }
-            }
-            
             for (int i = 0; i < ctx->process_count; i++) {
                 if (&ctx->processes[i] == current_process) {
-                    is_completed[i] = true;
+                    completed[i] = true;
+                    completed_count++;
                     break;
                 }
             }
-            completed++;
         } else {
-            // Process used its time quantum or was preempted
-            if (queue_level->algorithm == ALGORITHM_ROUND_ROBIN && 
-                execution_time == queue_level->time_quantum) {
-                // Time quantum expired, demote process
+            if (current_process->time_used_in_level >= scheduler->levels[queue_level].time_quantum) {
                 demote_process_mlfq(scheduler, current_process);
             } else {
-                // Move to end of current level (round robin rotation)
-                for (int i = 0; i < queue_level->size; i++) {
-                    if (queue_level->processes[i] == current_process) {
-                        for (int j = i; j < queue_level->size - 1; j++) {
-                            queue_level->processes[j] = queue_level->processes[j + 1];
-                        }
-                        queue_level->processes[queue_level->size - 1] = current_process;
-                        break;
-                    }
-                }
+                add_new_process_mlfq(scheduler, current_process);
             }
         }
     }
     
-    free(is_completed);
-    free(is_queued);
+    free(completed);
 }
 ```
 
-Advanced scheduling algorithms provide the sophistication needed for modern computing environments where diverse workloads compete for system resources. By combining priority management, multi-level queues, and adaptive feedback mechanisms, these algorithms can optimize system performance while maintaining fairness and responsiveness across different application types. 
+Advanced scheduling algorithms provide sophisticated mechanisms for managing complex workloads and system requirements. These algorithms demonstrate how theoretical scheduling principles can be combined and extended to create practical solutions for modern computing environments. 

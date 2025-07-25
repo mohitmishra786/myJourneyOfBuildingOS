@@ -15,17 +15,16 @@ Firm real-time systems occupy a middle ground where missing deadlines renders ta
 ### Real-time Task Model Implementation
 
 ```c
-// Real-time task structure definition
 typedef struct {
     int task_id;
-    int period;           // Task period in milliseconds
-    int execution_time;   // Worst-case execution time
-    int deadline;         // Relative deadline
-    int release_time;     // Next release time
-    int priority;         // Task priority
-    int remaining_time;   // Remaining execution time
-    int absolute_deadline; // Current absolute deadline
-    enum task_state state; // READY, RUNNING, BLOCKED, COMPLETED
+    int period;
+    int execution_time;
+    int deadline;
+    int release_time;
+    int priority;
+    int remaining_time;
+    int absolute_deadline;
+    enum task_state state;
 } rt_task_t;
 
 enum task_state {
@@ -35,18 +34,15 @@ enum task_state {
     TASK_COMPLETED
 };
 
-// Calculate task utilization
 double calculate_utilization(rt_task_t *task) {
     return (double)task->execution_time / task->period;
 }
 
-// Check if deadline is missed
 bool deadline_missed(rt_task_t *task, int current_time) {
     return current_time > task->absolute_deadline && 
            task->state != TASK_COMPLETED;
 }
 
-// Update absolute deadline for periodic task
 void update_absolute_deadline(rt_task_t *task, int current_time) {
     if (current_time >= task->release_time + task->period) {
         task->release_time += task->period;
@@ -116,7 +112,6 @@ Utilization bound analysis provides schedulability conditions for RMS. For n tas
 ```c
 #include <math.h>
 
-// RMS scheduler structure
 typedef struct {
     rt_task_t **task_set;
     int num_tasks;
@@ -124,22 +119,16 @@ typedef struct {
     int *priority_assignment;
 } rms_scheduler_t;
 
-// Initialize RMS scheduler
 rms_scheduler_t* init_rms_scheduler(rt_task_t **tasks, int num_tasks) {
     rms_scheduler_t *scheduler = malloc(sizeof(rms_scheduler_t));
     scheduler->task_set = tasks;
     scheduler->num_tasks = num_tasks;
     scheduler->priority_assignment = malloc(num_tasks * sizeof(int));
-    
-    // Calculate utilization bound: n(2^(1/n) - 1)
     scheduler->utilization_bound = num_tasks * (pow(2.0, 1.0/num_tasks) - 1);
-    
     return scheduler;
 }
 
-// Assign priorities based on periods (shorter period = higher priority)
 void assign_rms_priorities(rms_scheduler_t *scheduler) {
-    // Sort tasks by period (ascending)
     for (int i = 0; i < scheduler->num_tasks - 1; i++) {
         for (int j = i + 1; j < scheduler->num_tasks; j++) {
             if (scheduler->task_set[i]->period > scheduler->task_set[j]->period) {
@@ -150,14 +139,12 @@ void assign_rms_priorities(rms_scheduler_t *scheduler) {
         }
     }
     
-    // Assign priorities (0 = highest priority)
     for (int i = 0; i < scheduler->num_tasks; i++) {
         scheduler->task_set[i]->priority = i;
         scheduler->priority_assignment[i] = i;
     }
 }
 
-// Perform RMS utilization test
 bool rms_utilization_test(rms_scheduler_t *scheduler) {
     double total_utilization = 0.0;
     
@@ -168,18 +155,15 @@ bool rms_utilization_test(rms_scheduler_t *scheduler) {
     return total_utilization <= scheduler->utilization_bound;
 }
 
-// Calculate response time for RMS task
 int calculate_rms_response_time(rms_scheduler_t *scheduler, int task_index) {
     rt_task_t *task = scheduler->task_set[task_index];
     int response_time = task->execution_time;
     int prev_response_time = 0;
     
-    // Iterative calculation until convergence
     while (response_time != prev_response_time) {
         prev_response_time = response_time;
         response_time = task->execution_time;
         
-        // Add interference from higher priority tasks
         for (int i = 0; i < task_index; i++) {
             rt_task_t *higher_task = scheduler->task_set[i];
             int interference = (prev_response_time / higher_task->period + 1) * 
@@ -191,7 +175,6 @@ int calculate_rms_response_time(rms_scheduler_t *scheduler, int task_index) {
     return response_time;
 }
 
-// Select next task to run under RMS
 rt_task_t* rms_select_task(rms_scheduler_t *scheduler, int current_time) {
     rt_task_t *selected_task = NULL;
     int highest_priority = scheduler->num_tasks;
@@ -199,10 +182,8 @@ rt_task_t* rms_select_task(rms_scheduler_t *scheduler, int current_time) {
     for (int i = 0; i < scheduler->num_tasks; i++) {
         rt_task_t *task = scheduler->task_set[i];
         
-        // Update task state if new period starts
         update_absolute_deadline(task, current_time);
         
-        // Select ready task with highest priority
         if (task->state == TASK_READY && 
             task->priority < highest_priority &&
             current_time >= task->release_time) {
@@ -260,7 +241,6 @@ Dynamic priority assignment requires more sophisticated implementation than fixe
 ### EDF Scheduler Implementation
 
 ```c
-// EDF scheduler structure
 typedef struct {
     rt_task_t **task_set;
     int num_tasks;
@@ -268,7 +248,6 @@ typedef struct {
     int ready_count;
 } edf_scheduler_t;
 
-// Initialize EDF scheduler
 edf_scheduler_t* init_edf_scheduler(rt_task_t **tasks, int num_tasks) {
     edf_scheduler_t *scheduler = malloc(sizeof(edf_scheduler_t));
     scheduler->task_set = tasks;
@@ -278,24 +257,20 @@ edf_scheduler_t* init_edf_scheduler(rt_task_t **tasks, int num_tasks) {
     return scheduler;
 }
 
-// Compare function for deadline ordering
 int compare_deadlines(const void *a, const void *b) {
     rt_task_t *task_a = *(rt_task_t**)a;
     rt_task_t *task_b = *(rt_task_t**)b;
     return task_a->absolute_deadline - task_b->absolute_deadline;
 }
 
-// Update ready queue with deadline ordering
 void update_edf_ready_queue(edf_scheduler_t *scheduler, int current_time) {
     scheduler->ready_count = 0;
     
     for (int i = 0; i < scheduler->num_tasks; i++) {
         rt_task_t *task = scheduler->task_set[i];
         
-        // Update task state for new periods
         update_absolute_deadline(task, current_time);
         
-        // Add ready tasks to queue
         if (task->state == TASK_READY && 
             current_time >= task->release_time &&
             task->remaining_time > 0) {
@@ -303,23 +278,20 @@ void update_edf_ready_queue(edf_scheduler_t *scheduler, int current_time) {
         }
     }
     
-    // Sort by absolute deadline (earliest first)
     qsort(scheduler->ready_queue, scheduler->ready_count, 
           sizeof(rt_task_t*), compare_deadlines);
 }
 
-// Select task with earliest deadline
 rt_task_t* edf_select_task(edf_scheduler_t *scheduler, int current_time) {
     update_edf_ready_queue(scheduler, current_time);
     
     if (scheduler->ready_count > 0) {
-        return scheduler->ready_queue[0]; // Task with earliest deadline
+        return scheduler->ready_queue[0];
     }
     
     return NULL;
 }
 
-// EDF schedulability test (simple utilization check)
 bool edf_schedulability_test(edf_scheduler_t *scheduler) {
     double total_utilization = 0.0;
     
@@ -327,11 +299,9 @@ bool edf_schedulability_test(edf_scheduler_t *scheduler) {
         total_utilization += calculate_utilization(scheduler->task_set[i]);
     }
     
-    // EDF can achieve 100% utilization
     return total_utilization <= 1.0;
 }
 
-// Check for deadline violations
 bool check_deadline_violations(edf_scheduler_t *scheduler, int current_time) {
     for (int i = 0; i < scheduler->num_tasks; i++) {
         rt_task_t *task = scheduler->task_set[i];
@@ -342,7 +312,6 @@ bool check_deadline_violations(edf_scheduler_t *scheduler, int current_time) {
     return false;
 }
 
-// Processor demand analysis for exact EDF test
 int calculate_processor_demand(edf_scheduler_t *scheduler, int interval_start, 
                               int interval_end) {
     int total_demand = 0;
@@ -350,7 +319,6 @@ int calculate_processor_demand(edf_scheduler_t *scheduler, int interval_start,
     for (int i = 0; i < scheduler->num_tasks; i++) {
         rt_task_t *task = scheduler->task_set[i];
         
-        // Count task instances with deadlines in interval
         int first_deadline = task->deadline;
         while (first_deadline < interval_start) {
             first_deadline += task->period;
@@ -423,7 +391,6 @@ Priority Ceiling Protocol (PCP) assigns each resource a priority ceiling equal t
 ```c
 #include <pthread.h>
 
-// Resource structure for priority inheritance
 typedef struct {
     int resource_id;
     pthread_mutex_t mutex;
@@ -433,7 +400,6 @@ typedef struct {
     bool is_locked;
 } pi_resource_t;
 
-// Task with priority inheritance support
 typedef struct {
     rt_task_t base_task;
     int original_priority;
@@ -443,7 +409,6 @@ typedef struct {
     pthread_t thread_id;
 } pi_task_t;
 
-// Priority inheritance scheduler
 typedef struct {
     pi_task_t **tasks;
     pi_resource_t **resources;
@@ -452,7 +417,6 @@ typedef struct {
     pthread_mutex_t scheduler_mutex;
 } pi_scheduler_t;
 
-// Initialize priority inheritance resource
 pi_resource_t* init_pi_resource(int resource_id) {
     pi_resource_t *resource = malloc(sizeof(pi_resource_t));
     resource->resource_id = resource_id;
@@ -464,18 +428,15 @@ pi_resource_t* init_pi_resource(int resource_id) {
     return resource;
 }
 
-// Inherit priority when task blocks
 void inherit_priority(pi_scheduler_t *scheduler, int holder_id, int blocked_id) {
     pthread_mutex_lock(&scheduler->scheduler_mutex);
     
     pi_task_t *holder = scheduler->tasks[holder_id];
     pi_task_t *blocked = scheduler->tasks[blocked_id];
     
-    // Inherit higher priority
     if (blocked->current_priority < holder->current_priority) {
         holder->current_priority = blocked->current_priority;
         
-        // Update thread priority
         struct sched_param param;
         param.sched_priority = holder->current_priority;
         pthread_setschedparam(holder->thread_id, SCHED_FIFO, &param);
@@ -484,13 +445,11 @@ void inherit_priority(pi_scheduler_t *scheduler, int holder_id, int blocked_id) 
     pthread_mutex_unlock(&scheduler->scheduler_mutex);
 }
 
-// Restore original priority when resource released
 void restore_priority(pi_scheduler_t *scheduler, int task_id, pi_resource_t *resource) {
     pthread_mutex_lock(&scheduler->scheduler_mutex);
     
     pi_task_t *task = scheduler->tasks[task_id];
     
-    // Check if task still needs elevated priority for other resources
     int highest_inherited = task->original_priority;
     
     for (int i = 0; i < scheduler->num_resources; i++) {
@@ -504,7 +463,6 @@ void restore_priority(pi_scheduler_t *scheduler, int task_id, pi_resource_t *res
     
     task->current_priority = highest_inherited;
     
-    // Update thread priority
     struct sched_param param;
     param.sched_priority = task->current_priority;
     pthread_setschedparam(task->thread_id, SCHED_FIFO, &param);
@@ -512,25 +470,20 @@ void restore_priority(pi_scheduler_t *scheduler, int task_id, pi_resource_t *res
     pthread_mutex_unlock(&scheduler->scheduler_mutex);
 }
 
-// Lock resource with priority inheritance
 int pi_lock_resource(pi_scheduler_t *scheduler, int task_id, int resource_id) {
     pi_resource_t *resource = scheduler->resources[resource_id];
     pi_task_t *requesting_task = scheduler->tasks[task_id];
     
-    // Try to acquire the mutex
     if (pthread_mutex_trylock(&resource->mutex) == 0) {
-        // Successfully acquired
         resource->owner_task_id = task_id;
         resource->is_locked = true;
         return 0;
     } else {
-        // Resource is locked, implement priority inheritance
         if (resource->owner_task_id != -1) {
             inherit_priority(scheduler, resource->owner_task_id, task_id);
             resource->inherited_priority = requesting_task->current_priority;
         }
         
-        // Block until resource is available
         pthread_mutex_lock(&resource->mutex);
         resource->owner_task_id = task_id;
         resource->is_locked = true;
@@ -538,18 +491,15 @@ int pi_lock_resource(pi_scheduler_t *scheduler, int task_id, int resource_id) {
     }
 }
 
-// Unlock resource and restore priority
 int pi_unlock_resource(pi_scheduler_t *scheduler, int task_id, int resource_id) {
     pi_resource_t *resource = scheduler->resources[resource_id];
     
     if (resource->owner_task_id != task_id) {
-        return -1; // Not the owner
+        return -1;
     }
     
-    // Restore priority before releasing
     restore_priority(scheduler, task_id, resource);
     
-    // Release the resource
     resource->owner_task_id = -1;
     resource->is_locked = false;
     resource->inherited_priority = -1;
@@ -562,7 +512,6 @@ int pi_unlock_resource(pi_scheduler_t *scheduler, int task_id, int resource_id) 
 ### Priority Ceiling Protocol Implementation
 
 ```c
-// Priority ceiling resource structure
 typedef struct {
     int resource_id;
     int priority_ceiling;
@@ -571,7 +520,6 @@ typedef struct {
     bool is_locked;
 } pcp_resource_t;
 
-// System ceiling tracker
 typedef struct {
     int current_system_ceiling;
     pcp_resource_t **locked_resources;
@@ -579,7 +527,6 @@ typedef struct {
     pthread_mutex_t ceiling_mutex;
 } system_ceiling_t;
 
-// PCP scheduler structure
 typedef struct {
     pi_task_t **tasks;
     pcp_resource_t **resources;
@@ -588,15 +535,12 @@ typedef struct {
     int num_resources;
 } pcp_scheduler_t;
 
-// Calculate priority ceiling for resource
 int calculate_priority_ceiling(pcp_scheduler_t *scheduler, int resource_id) {
-    int ceiling = scheduler->num_tasks; // Lowest priority
+    int ceiling = scheduler->num_tasks;
     
-    // Find highest priority of any task that uses this resource
     for (int i = 0; i < scheduler->num_tasks; i++) {
         pi_task_t *task = scheduler->tasks[i];
         
-        // Check if task uses this resource (simplified check)
         if (task->current_priority < ceiling) {
             ceiling = task->current_priority;
         }
@@ -605,11 +549,10 @@ int calculate_priority_ceiling(pcp_scheduler_t *scheduler, int resource_id) {
     return ceiling;
 }
 
-// Update system ceiling
 void update_system_ceiling(system_ceiling_t *ceiling) {
     pthread_mutex_lock(&ceiling->ceiling_mutex);
     
-    ceiling->current_system_ceiling = 1000; // Initialize to lowest
+    ceiling->current_system_ceiling = 1000;
     
     for (int i = 0; i < ceiling->locked_count; i++) {
         pcp_resource_t *resource = ceiling->locked_resources[i];
@@ -621,31 +564,25 @@ void update_system_ceiling(system_ceiling_t *ceiling) {
     pthread_mutex_unlock(&ceiling->ceiling_mutex);
 }
 
-// Check if task can access resource under PCP
 bool pcp_can_access_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) {
     pi_task_t *task = scheduler->tasks[task_id];
     pcp_resource_t *resource = scheduler->resources[resource_id];
     
-    // Task can access if its priority is higher than system ceiling
     return task->current_priority < scheduler->system_ceiling->current_system_ceiling ||
            resource->owner_task_id == task_id;
 }
 
-// Lock resource under Priority Ceiling Protocol
 int pcp_lock_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) {
     pcp_resource_t *resource = scheduler->resources[resource_id];
     
-    // Check ceiling condition
     if (!pcp_can_access_resource(scheduler, task_id, resource_id)) {
-        return -1; // Access denied due to ceiling violation
+        return -1;
     }
     
-    // Try to acquire resource
     if (pthread_mutex_trylock(&resource->mutex) == 0) {
         resource->owner_task_id = task_id;
         resource->is_locked = true;
         
-        // Add to locked resources and update system ceiling
         pthread_mutex_lock(&scheduler->system_ceiling->ceiling_mutex);
         scheduler->system_ceiling->locked_resources[scheduler->system_ceiling->locked_count++] = resource;
         pthread_mutex_unlock(&scheduler->system_ceiling->ceiling_mutex);
@@ -654,22 +591,19 @@ int pcp_lock_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) 
         return 0;
     }
     
-    return -1; // Resource busy
+    return -1;
 }
 
-// Unlock resource under PCP
 int pcp_unlock_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) {
     pcp_resource_t *resource = scheduler->resources[resource_id];
     
     if (resource->owner_task_id != task_id) {
-        return -1; // Not the owner
+        return -1;
     }
     
-    // Remove from locked resources
     pthread_mutex_lock(&scheduler->system_ceiling->ceiling_mutex);
     for (int i = 0; i < scheduler->system_ceiling->locked_count; i++) {
         if (scheduler->system_ceiling->locked_resources[i] == resource) {
-            // Shift remaining resources
             for (int j = i; j < scheduler->system_ceiling->locked_count - 1; j++) {
                 scheduler->system_ceiling->locked_resources[j] = 
                     scheduler->system_ceiling->locked_resources[j + 1];
@@ -680,12 +614,10 @@ int pcp_unlock_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id
     }
     pthread_mutex_unlock(&scheduler->system_ceiling->ceiling_mutex);
     
-    // Release resource
     resource->owner_task_id = -1;
     resource->is_locked = false;
     pthread_mutex_unlock(&resource->mutex);
     
-    // Update system ceiling
     update_system_ceiling(scheduler->system_ceiling);
     return 0;
 }
@@ -737,7 +669,6 @@ Sporadic servers provide excellent aperiodic response time while maintaining the
 ### Aperiodic Task Structures
 
 ```c
-// Aperiodic task structure
 typedef struct {
     int task_id;
     int arrival_time;
@@ -749,7 +680,6 @@ typedef struct {
     struct aperiodic_task *next;
 } aperiodic_task_t;
 
-// Server structure for aperiodic task scheduling
 typedef struct {
     int server_id;
     int period;
@@ -771,7 +701,6 @@ enum server_type {
 ### Polling Server Implementation
 
 ```c
-// Polling server scheduler
 typedef struct {
     aperiodic_server_t *server;
     rt_task_t **periodic_tasks;
@@ -780,7 +709,6 @@ typedef struct {
     int current_time;
 } polling_scheduler_t;
 
-// Initialize polling server
 aperiodic_server_t* init_polling_server(int period, int budget, int priority) {
     aperiodic_server_t *server = malloc(sizeof(aperiodic_server_t));
     server->server_id = 0;
@@ -794,14 +722,12 @@ aperiodic_server_t* init_polling_server(int period, int budget, int priority) {
     return server;
 }
 
-// Add aperiodic task to queue
 void add_aperiodic_task(polling_scheduler_t *scheduler, aperiodic_task_t *task) {
     task->next = NULL;
     
     if (scheduler->aperiodic_queue_head == NULL) {
         scheduler->aperiodic_queue_head = task;
     } else {
-        // Add to end of queue (FIFO)
         aperiodic_task_t *current = scheduler->aperiodic_queue_head;
         while (current->next != NULL) {
             current = current->next;
@@ -810,34 +736,27 @@ void add_aperiodic_task(polling_scheduler_t *scheduler, aperiodic_task_t *task) 
     }
 }
 
-// Execute polling server
 aperiodic_task_t* execute_polling_server(polling_scheduler_t *scheduler) {
     aperiodic_server_t *server = scheduler->server;
     
-    // Check if server period has started
     if (scheduler->current_time >= server->next_replenishment_time - server->period) {
         
-        // Replenish budget at period start
         if (scheduler->current_time >= server->next_replenishment_time) {
             server->remaining_budget = server->budget;
             server->next_replenishment_time += server->period;
         }
         
-        // Execute aperiodic tasks if budget available
         if (server->remaining_budget > 0 && scheduler->aperiodic_queue_head != NULL) {
             aperiodic_task_t *task = scheduler->aperiodic_queue_head;
             
-            // Execute for one time unit
             task->remaining_time--;
             server->remaining_budget--;
             
-            // Check if task completed
             if (task->remaining_time == 0) {
                 task->completion_time = scheduler->current_time;
                 task->response_time = task->completion_time - task->arrival_time;
                 task->state = TASK_COMPLETED;
                 
-                // Remove from queue
                 scheduler->aperiodic_queue_head = task->next;
                 return task;
             }
@@ -851,14 +770,12 @@ aperiodic_task_t* execute_polling_server(polling_scheduler_t *scheduler) {
 ### Sporadic Server Implementation
 
 ```c
-// Sporadic server replenishment entry
 typedef struct replenish_entry {
     int time;
     int amount;
     struct replenish_entry *next;
 } replenish_entry_t;
 
-// Sporadic server structure
 typedef struct {
     aperiodic_server_t base_server;
     replenish_entry_t *replenish_queue;
@@ -866,7 +783,6 @@ typedef struct {
     bool is_active;
 } sporadic_server_t;
 
-// Initialize sporadic server
 sporadic_server_t* init_sporadic_server(int budget, int priority) {
     sporadic_server_t *server = malloc(sizeof(sporadic_server_t));
     server->base_server.budget = budget;
@@ -879,14 +795,12 @@ sporadic_server_t* init_sporadic_server(int budget, int priority) {
     return server;
 }
 
-// Add replenishment to queue
 void add_replenishment(sporadic_server_t *server, int time, int amount) {
     replenish_entry_t *entry = malloc(sizeof(replenish_entry_t));
     entry->time = time;
     entry->amount = amount;
     entry->next = NULL;
     
-    // Insert in time order
     if (server->replenish_queue == NULL || 
         server->replenish_queue->time > time) {
         entry->next = server->replenish_queue;
@@ -901,11 +815,9 @@ void add_replenishment(sporadic_server_t *server, int time, int amount) {
     }
 }
 
-// Execute sporadic server
 aperiodic_task_t* execute_sporadic_server(sporadic_server_t *server, 
                                          aperiodic_task_t *aperiodic_queue,
                                          int current_time) {
-    // Process replenishments
     while (server->replenish_queue != NULL && 
            server->replenish_queue->time <= current_time) {
         replenish_entry_t *entry = server->replenish_queue;
@@ -914,28 +826,22 @@ aperiodic_task_t* execute_sporadic_server(sporadic_server_t *server,
         free(entry);
     }
     
-    // Check if aperiodic tasks are ready and budget available
     if (aperiodic_queue != NULL && server->base_server.remaining_budget > 0) {
         
-        // Start active period if not already active
         if (!server->is_active) {
             server->is_active = true;
             server->active_time = current_time;
         }
         
-        // Execute aperiodic task
         aperiodic_task_t *task = aperiodic_queue;
         task->remaining_time--;
         
-        // Consume budget and schedule replenishment
         int consumed_budget = 1;
         server->base_server.remaining_budget -= consumed_budget;
         
-        // Schedule replenishment for later
         int replenish_time = server->active_time + server->base_server.period;
         add_replenishment(server, replenish_time, consumed_budget);
         
-        // Check if task completed
         if (task->remaining_time == 0) {
             task->completion_time = current_time;
             task->response_time = task->completion_time - task->arrival_time;
@@ -943,14 +849,12 @@ aperiodic_task_t* execute_sporadic_server(sporadic_server_t *server,
             return task;
         }
     } else {
-        // No aperiodic tasks or budget exhausted
         server->is_active = false;
     }
     
     return NULL;
 }
 
-// Calculate sporadic server interference (same as periodic task)
 double calculate_sporadic_server_interference(sporadic_server_t *server) {
     return (double)server->base_server.budget / server->base_server.period;
 }
@@ -1004,7 +908,6 @@ Contemporary real-time systems face new challenges from multicore processors, mi
 ### Multicore Real-time Scheduling
 
 ```c
-// Multicore real-time task
 typedef struct {
     rt_task_t base_task;
     int assigned_core;
@@ -1013,7 +916,6 @@ typedef struct {
     cpu_set_t affinity_mask;
 } multicore_rt_task_t;
 
-// Global scheduling on multicore
 typedef struct {
     multicore_rt_task_t **global_task_set;
     int num_tasks;
@@ -1022,7 +924,6 @@ typedef struct {
     pthread_mutex_t global_mutex;
 } global_scheduler_t;
 
-// Select task for core under global EDF
 multicore_rt_task_t* global_edf_select(global_scheduler_t *scheduler, int core_id) {
     pthread_mutex_lock(&scheduler->global_mutex);
     
@@ -1048,13 +949,10 @@ multicore_rt_task_t* global_edf_select(global_scheduler_t *scheduler, int core_i
     return selected;
 }
 
-// Partitioned scheduling - assign tasks to cores
 int partition_tasks_to_cores(global_scheduler_t *scheduler) {
-    // First-Fit Decreasing algorithm
     double core_utilizations[scheduler->num_cores];
     memset(core_utilizations, 0, sizeof(double) * scheduler->num_cores);
     
-    // Sort tasks by utilization (decreasing)
     for (int i = 0; i < scheduler->num_tasks - 1; i++) {
         for (int j = i + 1; j < scheduler->num_tasks; j++) {
             double util_i = calculate_utilization(&scheduler->global_task_set[i]->base_task);
@@ -1067,15 +965,13 @@ int partition_tasks_to_cores(global_scheduler_t *scheduler) {
         }
     }
     
-    // Assign tasks to cores
     for (int i = 0; i < scheduler->num_tasks; i++) {
         multicore_rt_task_t *task = scheduler->global_task_set[i];
         double task_util = calculate_utilization(&task->base_task);
         
-        // Find first core that can accommodate the task
         bool assigned = false;
         for (int core = 0; core < scheduler->num_cores; core++) {
-            if (core_utilizations[core] + task_util <= 0.69) { // RMS bound
+            if (core_utilizations[core] + task_util <= 0.69) {
                 task->assigned_core = core;
                 core_utilizations[core] += task_util;
                 task->can_migrate = false;
@@ -1085,18 +981,17 @@ int partition_tasks_to_cores(global_scheduler_t *scheduler) {
         }
         
         if (!assigned) {
-            return -1; // Partitioning failed
+            return -1;
         }
     }
     
-    return 0; // Success
+    return 0;
 }
 ```
 
 ### Mixed-Criticality System
 
 ```c
-// Mixed-criticality task
 typedef struct {
     rt_task_t base_task;
     enum criticality_level criticality;
@@ -1110,7 +1005,6 @@ enum criticality_level {
     MAX_CRITICALITY_LEVELS = 2
 };
 
-// Mixed-criticality scheduler
 typedef struct {
     mixed_criticality_task_t **task_set;
     int num_tasks;
@@ -1118,21 +1012,18 @@ typedef struct {
     int mode_change_time;
 } mixed_criticality_scheduler_t;
 
-// Mode change protocol
 void trigger_mode_change(mixed_criticality_scheduler_t *scheduler, 
                         enum criticality_level new_mode, int current_time) {
     if (new_mode > scheduler->current_mode) {
         scheduler->current_mode = new_mode;
         scheduler->mode_change_time = current_time;
         
-        // Abort low-criticality tasks
         for (int i = 0; i < scheduler->num_tasks; i++) {
             mixed_criticality_task_t *task = scheduler->task_set[i];
             
             if (task->criticality < new_mode) {
-                task->base_task.state = TASK_COMPLETED; // Abort
+                task->base_task.state = TASK_COMPLETED;
             } else {
-                // Update execution time for high-criticality mode
                 task->base_task.execution_time = 
                     task->execution_times[new_mode];
                 task->base_task.remaining_time = 
@@ -1142,7 +1033,6 @@ void trigger_mode_change(mixed_criticality_scheduler_t *scheduler,
     }
 }
 
-// Check for budget overrun and mode change
 bool check_budget_overrun(mixed_criticality_scheduler_t *scheduler, 
                          mixed_criticality_task_t *task, int current_time) {
     int low_crit_execution = task->execution_times[LOW_CRITICALITY];
@@ -1209,5 +1099,4 @@ LowCriticalityMode --|> HighCriticalityMode : "transitions_to"
 @enduml
 ```
 
-The evolution of real-time scheduling continues as systems become more complex and diverse. Understanding fundamental real-time scheduling principles provides the foundation for addressing these emerging challenges and developing next-generation real-time systems that meet the demanding requirements of modern applications. 
 The evolution of real-time scheduling continues as systems become more complex and diverse. Understanding fundamental real-time scheduling principles provides the foundation for addressing these emerging challenges and developing next-generation real-time systems that meet the demanding requirements of modern applications. 
