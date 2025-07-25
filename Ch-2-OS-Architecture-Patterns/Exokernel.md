@@ -1,4 +1,4 @@
-## Exokernels: Flexible Resource Management and Multiplexing
+# Exokernels: Flexible Resource Management and Multiplexing
 
 Exokernel is a unique operating system architecture that takes a fundamentally different approach to resource management and abstraction compared to traditional monolithic and microkernel designs. Instead of providing a set of high-level abstractions and services, the exokernel focuses on efficiently multiplexing and protecting low-level hardware resources, allowing applications to implement their own resource management policies.
 

@@ -1,4 +1,5 @@
-## Introduction
+# Case Study: Windows NT Architecture
+
 Windows NT represents one of the most successful implementations of a hybrid kernel architecture, balancing the flexibility of microkernels with the performance of monolithic systems. This case study examines its revolutionary design and evolution.
 
 ## Historical Context

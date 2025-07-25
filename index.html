@@ -3,79 +3,944 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OS Learning Journey</title>
+    <title>OS Learning Journey - Operating Systems Architecture & Design</title>
+    <meta name="description" content="A comprehensive guide to operating systems architecture, design patterns, and implementation">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Prism.js for Syntax Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" id="prism-light">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prism-dark" disabled>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace'],
+                    },
                     typography: {
                         DEFAULT: {
                             css: {
                                 maxWidth: 'none',
+                                color: '#374151',
+                                lineHeight: '1.8',
+                                fontSize: '1.125rem',
+                                h1: {
+                                    fontSize: '2.5rem',
+                                    fontWeight: '700',
+                                    lineHeight: '1.2',
+                                    marginTop: '0',
+                                    marginBottom: '2rem',
+                                    color: '#111827',
+                                    paddingBottom: '0.75rem',
+                                    borderBottom: '3px solid #e5e7eb',
+                                },
+                                h2: {
+                                    fontSize: '2rem',
+                                    fontWeight: '600',
+                                    lineHeight: '1.3',
+                                    marginTop: '3rem',
+                                    marginBottom: '1.5rem',
+                                    color: '#111827',
+                                    position: 'relative',
+                                    paddingLeft: '1rem',
+                                },
+                                'h2::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    left: '0',
+                                    top: '0.25rem',
+                                    width: '4px',
+                                    height: '80%',
+                                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                    borderRadius: '2px',
+                                },
+                                h3: {
+                                    fontSize: '1.5rem',
+                                    fontWeight: '600',
+                                    lineHeight: '1.4',
+                                    marginTop: '2.5rem',
+                                    marginBottom: '1rem',
+                                    color: '#1f2937',
+                                },
+                                h4: {
+                                    fontSize: '1.25rem',
+                                    fontWeight: '600',
+                                    lineHeight: '1.4',
+                                    marginTop: '2rem',
+                                    marginBottom: '0.75rem',
+                                    color: '#374151',
+                                },
+                                h5: {
+                                    fontSize: '1.125rem',
+                                    fontWeight: '600',
+                                    marginTop: '1.75rem',
+                                    marginBottom: '0.5rem',
+                                    color: '#4b5563',
+                                },
+                                h6: {
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    marginTop: '1.5rem',
+                                    marginBottom: '0.5rem',
+                                    color: '#6b7280',
+                                },
+                                p: {
+                                    marginTop: '1.5rem',
+                                    marginBottom: '1.5rem',
+                                    color: '#374151',
+                                    textAlign: 'justify',
+                                },
+                                'p:first-child': {
+                                    marginTop: '0',
+                                },
+                                strong: {
+                                    color: '#111827',
+                                    fontWeight: '700',
+                                },
+                                code: {
+                                    color: '#dc2626',
+                                    backgroundColor: '#fef2f2',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '0.375rem',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '500',
+                                    fontFamily: 'JetBrains Mono, monospace',
+                                    border: '1px solid #fecaca',
+                                },
+                                'code::before': {
+                                    content: '""',
+                                },
+                                'code::after': {
+                                    content: '""',
+                                },
+                                pre: {
+                                    backgroundColor: '#1f2937',
+                                    color: '#f9fafb',
+                                    padding: '1.5rem',
+                                    borderRadius: '0.75rem',
+                                    fontSize: '0.875rem',
+                                    lineHeight: '1.7',
+                                    fontFamily: 'JetBrains Mono, monospace',
+                                    overflowX: 'auto',
+                                    border: '1px solid #374151',
+                                    marginTop: '2rem',
+                                    marginBottom: '2rem',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                },
+                                'pre code': {
+                                    backgroundColor: 'transparent',
+                                    color: 'inherit',
+                                    padding: '0',
+                                    borderRadius: '0',
+                                    fontSize: 'inherit',
+                                    fontWeight: '400',
+                                    border: 'none',
+                                },
+                                ul: {
+                                    listStyleType: 'disc',
+                                    paddingLeft: '1.5rem',
+                                    marginTop: '1.5rem',
+                                    marginBottom: '1.5rem',
+                                },
+                                'ul li': {
+                                    marginTop: '0.5rem',
+                                    marginBottom: '0.5rem',
+                                    lineHeight: '1.7',
+                                },
+                                'ul li::marker': {
+                                    color: '#6b7280',
+                                },
+                                ol: {
+                                    listStyleType: 'decimal',
+                                    paddingLeft: '1.5rem',
+                                    marginTop: '1.5rem',
+                                    marginBottom: '1.5rem',
+                                },
+                                'ol li': {
+                                    marginTop: '0.5rem',
+                                    marginBottom: '0.5rem',
+                                    lineHeight: '1.7',
+                                },
+                                'ol li::marker': {
+                                    color: '#6b7280',
+                                    fontWeight: '600',
+                                },
+                                'li p': {
+                                    marginTop: '0.75rem',
+                                    marginBottom: '0.75rem',
+                                },
+                                'li:first-child': {
+                                    marginTop: '0',
+                                },
+                                'li:last-child': {
+                                    marginBottom: '0',
+                                },
+                                blockquote: {
+                                    borderLeftWidth: '4px',
+                                    borderLeftColor: '#3b82f6',
+                                    backgroundColor: '#eff6ff',
+                                    padding: '1.5rem 2rem',
+                                    marginTop: '2rem',
+                                    marginBottom: '2rem',
+                                    borderRadius: '0.5rem',
+                                    fontStyle: 'italic',
+                                    fontSize: '1.1rem',
+                                    boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                },
+                                table: {
+                                    marginTop: '2rem',
+                                    marginBottom: '2rem',
+                                    borderCollapse: 'collapse',
+                                    width: '100%',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                    borderRadius: '0.5rem',
+                                    overflow: 'hidden',
+                                },
+                                th: {
+                                    backgroundColor: '#f8fafc',
+                                    padding: '1rem 1.25rem',
+                                    textAlign: 'left',
+                                    fontWeight: '600',
+                                    borderBottom: '2px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontSize: '0.875rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                },
+                                td: {
+                                    padding: '1rem 1.25rem',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    color: '#374151',
+                                },
+                                'tr:hover': {
+                                    backgroundColor: '#f8fafc',
+                                },
+                                a: {
+                                    color: '#2563eb',
+                                    textDecoration: 'underline',
+                                    fontWeight: '500',
+                                    textDecorationColor: '#93c5fd',
+                                    textUnderlineOffset: '2px',
+                                },
+                                'a:hover': {
+                                    color: '#1d4ed8',
+                                    textDecorationColor: '#2563eb',
+                                },
+                                hr: {
+                                    marginTop: '3rem',
+                                    marginBottom: '3rem',
+                                    border: 'none',
+                                    borderTop: '2px solid #e5e7eb',
+                                    borderRadius: '1px',
+                                },
+                            },
+                        },
+                        dark: {
+                            css: {
+                                color: '#d1d5db',
+                                h1: {
+                                    color: '#f9fafb',
+                                    borderBottomColor: '#374151',
+                                },
+                                h2: {
+                                    color: '#f3f4f6',
+                                },
+                                'h2::before': {
+                                    background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+                                },
+                                h3: {
+                                    color: '#e5e7eb',
+                                },
+                                h4: {
+                                    color: '#d1d5db',
+                                },
+                                h5: {
+                                    color: '#9ca3af',
+                                },
+                                h6: {
+                                    color: '#6b7280',
+                                },
+                                p: {
+                                    color: '#d1d5db',
+                                },
+                                strong: {
+                                    color: '#f9fafb',
+                                    fontWeight: '700',
+                                },
+                                code: {
+                                    color: '#fbbf24',
+                                    backgroundColor: '#451a03',
+                                    border: '1px solid #78350f',
+                                },
+                                blockquote: {
+                                    borderLeftColor: '#60a5fa',
+                                    backgroundColor: '#1e3a8a',
+                                    color: '#e0e7ff',
+                                },
+                                th: {
+                                    backgroundColor: '#374151',
+                                    color: '#d1d5db',
+                                    borderBottomColor: '#4b5563',
+                                },
+                                td: {
+                                    color: '#d1d5db',
+                                    borderBottomColor: '#374151',
+                                },
+                                'tr:hover': {
+                                    backgroundColor: '#374151',
+                                },
+                                a: {
+                                    color: '#60a5fa',
+                                    textDecorationColor: '#3b82f6',
+                                },
+                                'a:hover': {
+                                    color: '#93c5fd',
+                                    textDecorationColor: '#60a5fa',
+                                },
+                                hr: {
+                                    borderTopColor: '#374151',
+                                },
+                                'ul li::marker': {
+                                    color: '#9ca3af',
+                                },
+                                'ol li::marker': {
+                                    color: '#9ca3af',
+                                },
                             },
                         },
                     },
                 },
             },
-            plugins: [
-                function({addBase, theme}) {
-                    addBase({
-                        'h1': { fontSize: theme('fontSize.2xl'), fontWeight: theme('fontWeight.bold') },
-                        'h2': { fontSize: theme('fontSize.xl'), fontWeight: theme('fontWeight.bold') },
-                        'h3': { fontSize: theme('fontSize.lg'), fontWeight: theme('fontWeight.bold') },
-                        'a': { color: theme('colors.blue.600') },
-                        'p': { marginTop: theme('spacing.4'), marginBottom: theme('spacing.4') },
-                        'ul': { listStyleType: 'disc', paddingLeft: theme('spacing.4') },
-                        'ol': { listStyleType: 'decimal', paddingLeft: theme('spacing.4') },
-                        'code': { 
-                            backgroundColor: theme('colors.gray.100'),
-                            padding: theme('spacing.1'),
-                            borderRadius: theme('borderRadius.sm'),
-                        },
-                        'pre': {
-                            backgroundColor: theme('colors.gray.100'),
-                            padding: theme('spacing.4'),
-                            borderRadius: theme('borderRadius.md'),
-                            overflowX: 'auto',
-                        }
-                    })
-                }
-            ],
         }
     </script>
+    
+    <!-- Markdown parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        // Configure marked to handle GitHub-flavored markdown
+        // Configure marked with better options
         marked.setOptions({
             gfm: true,
             breaks: true,
+            headerIds: true,
+            mangle: false,
             highlight: function(code, language) {
+                if (language && window.Prism && window.Prism.languages[language]) {
+                    return window.Prism.highlight(code, window.Prism.languages[language], language);
+                }
                 return code;
             }
         });
     </script>
+    
+    <!-- Custom styles -->
+    <style>
+        /* Reset and base styles */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+            text-rendering: optimizeLegibility;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Dark mode styles */
+        .dark {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        
+        .dark #sidebar {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+        
+        .dark #main-content header {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+        
+        .dark #content {
+            background-color: #1e293b;
+            color: #e2e8f0;
+        }
+        
+        .dark .plantuml-container .bg-white {
+            background-color: #334155 !important;
+        }
+        
+        /* Layout styles */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f9fafb;
+        }
+        
+        .dark .app-container {
+            background-color: #0f172a;
+        }
+        
+        /* Ensure proper flexbox behavior */
+        #root {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar layout */
+        #sidebar {
+            flex-shrink: 0;
+        }
+        
+        /* Main content layout */
+        #main-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Dark mode toggle button */
+        .dark-mode-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #e5e7eb;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .dark .dark-mode-toggle {
+            background: #4b5563;
+        }
+        
+        .dark-mode-toggle::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dark .dark-mode-toggle::before {
+            transform: translateX(30px);
+            background: #1f2937;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        .dark ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* PlantUML container styles */
+        .plantuml-container {
+            margin: 3rem 0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .plantuml-container .bg-white {
+            transition: box-shadow 0.2s ease;
+        }
+        
+        .plantuml-container .bg-white:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Code block enhancements */
+        pre {
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .copy-btn {
+            transition: all 0.2s ease-in-out;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 11px;
+            line-height: 1;
+            min-width: 40px;
+        }
+        
+        pre:hover .copy-btn {
+            opacity: 0.85;
+        }
+        
+        .copy-btn:hover {
+            opacity: 1 !important;
+            transform: scale(1.02);
+        }
+        
+        /* Content spacing improvements */
+        .prose {
+            line-height: 1.8;
+        }
+        
+        .prose > * + * {
+            margin-top: 1.5rem;
+        }
+        
+        .prose h1 + *,
+        .prose h2 + *,
+        .prose h3 + *,
+        .prose h4 + * {
+            margin-top: 1rem;
+        }
+        
+        /* Header improvements */
+        .prose h1 {
+            font-size: 2.5rem !important;
+            font-weight: 700 !important;
+            margin-top: 0 !important;
+            margin-bottom: 2rem !important;
+            padding-bottom: 0.75rem !important;
+            border-bottom: 3px solid #e5e7eb !important;
+        }
+        
+        .dark .prose h1 {
+            border-bottom-color: #374151 !important;
+        }
+        
+        .prose h2 {
+            font-size: 2rem !important;
+            font-weight: 600 !important;
+            margin-top: 3rem !important;
+            margin-bottom: 1.5rem !important;
+            padding-left: 1rem !important;
+            position: relative !important;
+        }
+        
+        .prose h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.25rem;
+            width: 4px;
+            height: 80%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 2px;
+        }
+        
+        .dark .prose h2::before {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+        }
+        
+        .prose h3 {
+            font-size: 1.5rem !important;
+            font-weight: 600 !important;
+            margin-top: 2.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        
+        .prose h4 {
+            font-size: 1.25rem !important;
+            font-weight: 600 !important;
+            margin-top: 2rem !important;
+            margin-bottom: 0.75rem !important;
+        }
+        
+        /* List improvements */
+        .prose ul {
+            list-style-type: disc !important;
+            padding-left: 1.5rem !important;
+            margin-top: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .prose ol {
+            list-style-type: decimal !important;
+            padding-left: 1.5rem !important;
+            margin-top: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .prose li {
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+            line-height: 1.7 !important;
+        }
+        
+        .prose ul li::marker {
+            color: #6b7280;
+        }
+        
+        .dark .prose ul li::marker {
+            color: #9ca3af;
+        }
+        
+        .prose ol li::marker {
+            color: #6b7280;
+            font-weight: 600;
+        }
+        
+        .dark .prose ol li::marker {
+            color: #9ca3af;
+        }
+        
+        /* Focus styles */
+        button:focus,
+        a:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+            border-radius: 0.25rem;
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+            transition-duration: 150ms;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Table enhancements */
+        .prose table {
+            border: 1px solid #e5e7eb;
+        }
+        
+        .dark .prose table {
+            border-color: #374151;
+        }
+        
+        .prose thead tr {
+            background: linear-gradient(to right, #f8fafc, #f1f5f9);
+        }
+        
+        .dark .prose thead tr {
+            background: linear-gradient(to right, #374151, #475569);
+        }
+        
+        .prose tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        .dark .prose tbody tr:nth-child(even) {
+            background-color: #2d3748;
+        }
+        
+        /* Sidebar improvements */
+        #sidebar {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Progress bar animation */
+        #progress-bar {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Mobile improvements */
+        @media (max-width: 640px) {
+            .prose {
+                font-size: 1rem;
+                line-height: 1.7;
+            }
+            
+            .prose h1 {
+                font-size: 2.25rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .prose h2 {
+                font-size: 1.875rem;
+                margin-top: 2.5rem;
+                margin-bottom: 1.25rem;
+            }
+            
+            .prose h3 {
+                font-size: 1.5rem;
+                margin-top: 2rem;
+                margin-bottom: 1rem;
+            }
+            
+            .prose h4 {
+                font-size: 1.25rem;
+            }
+            
+            .prose p {
+                margin-top: 1.25rem;
+                margin-bottom: 1.25rem;
+            }
+            
+            .prose pre {
+                padding: 1.25rem;
+                font-size: 0.8125rem;
+            }
+            
+            .plantuml-container {
+                margin: 2rem 0;
+            }
+        }
+        
+        /* Loading animation improvements */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Header shadow on scroll */
+        header.scrolled {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Content max width for better readability */
+        article {
+            max-width: 65ch;
+            margin: 0 auto;
+        }
+        
+        /* Responsive layout adjustments */
+        @media (max-width: 1023px) {
+            #root {
+                flex-direction: column;
+            }
+            
+            #sidebar {
+                position: fixed;
+                z-index: 50;
+                width: 320px;
+            }
+            
+            #main-content {
+                width: 100%;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            #root {
+                flex-direction: row;
+            }
+            
+            #sidebar {
+                position: static;
+                transform: none !important;
+                width: 320px;
+                flex-shrink: 0;
+            }
+            
+            #main-content {
+                flex: 1;
+                min-width: 0;
+            }
+        }
+        
+        /* Enhanced typography */
+        .prose strong {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+        
+        .dark .prose strong {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fbbf24;
+        }
+        
+        /* Syntax highlighting adjustments for dark mode */
+        .dark pre[class*="language-"] {
+            background: #0f1419 !important;
+        }
+        
+        .dark code[class*="language-"] {
+            background: #0f1419 !important;
+        }
+    </style>
+    
+    <!-- Configuration -->
     <script src="book-config.js"></script>
-    <script src="book-viewer.js"></script>
 </head>
-<body class="bg-gray-50">
-    <div id="root"></div>
+<body class="bg-gray-50 font-sans antialiased">
+    <div id="root" class="min-h-screen app-container"></div>
+    
+    <!-- Prism.js for Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <!-- Loading script and error handling -->
     <script>
+        // Dark mode functionality
+        function initDarkMode() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                togglePrismTheme(true);
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            togglePrismTheme(isDark);
+        }
+
+        function togglePrismTheme(isDark) {
+            const lightTheme = document.getElementById('prism-light');
+            const darkTheme = document.getElementById('prism-dark');
+            
+            if (isDark) {
+                lightTheme.disabled = true;
+                darkTheme.disabled = false;
+            } else {
+                lightTheme.disabled = false;
+                darkTheme.disabled = true;
+            }
+        }
+
+        // Initialize dark mode before page loads
+        initDarkMode();
+
+        // Enhanced error handling
         window.onerror = function(msg, url, line, col, error) {
-            console.error('Error: ', msg, '\nURL: ', url, '\nLine:', line, '\nColumn:', col, '\nError object:', error);
+            console.error('Global Error:', {
+                message: msg,
+                source: url,
+                line: line,
+                column: col,
+                error: error
+            });
+            
+            // Show user-friendly error message
+            const root = document.getElementById('root');
+            if (root && !root.innerHTML.trim()) {
+                root.innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                        <div class="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.96-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                                <h2 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Something went wrong</h2>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                    We encountered an error while loading the application. Please refresh the page to try again.
+                                </p>
+                                <button 
+                                    onclick="window.location.reload()" 
+                                    class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    Refresh Page
+                                </button>
+                            </div>
+                            <details class="mt-4">
+                                <summary class="text-xs text-gray-500 dark:text-gray-400 cursor-pointer">Error details</summary>
+                                <pre class="mt-2 text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-auto">${msg}\n${url}:${line}:${col}</pre>
+                            </details>
+                        </div>
+                    </div>
+                `;
+            }
             return false;
         };
 
+        // Add scroll effect to header
+        let lastScrollY = 0;
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (header) {
+                if (window.scrollY > 10) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+        });
+
         // Initialize after everything is loaded
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM Content Loaded');
+            console.log('DOM Content Loaded - Initializing Book Viewer');
+            
             const root = document.getElementById('root');
             if (!root) {
                 console.error('Root element not found!');
                 return;
             }
-            window.bookViewer = new BookViewer(root, bookConfig.chapters);
+            
+            // Check if bookConfig is available
+            if (typeof bookConfig === 'undefined' || !bookConfig.chapters) {
+                console.error('Book configuration not found!');
+                root.innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                        <div class="text-center">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Configuration Error</h2>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">Book configuration could not be loaded.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                window.bookViewer = new BookViewer(root, bookConfig.chapters);
+                console.log('BookViewer initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize BookViewer:', error);
+                throw error;
+            }
+        });
+        
+        // Handle network errors for fetch requests
+        window.addEventListener('unhandledrejection', event => {
+            console.error('Unhandled promise rejection:', event.reason);
+            
+            // Don't prevent default for network errors, let them bubble up
+            if (event.reason && event.reason.message && event.reason.message.includes('fetch')) {
+                // This will be handled by the BookViewer's error handling
+                return;
+            }
         });
     </script>
+    
+    <!-- Book Viewer -->
+    <script src="book-viewer.js"></script>
 </body>
 </html>

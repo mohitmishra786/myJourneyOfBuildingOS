@@ -1,4 +1,4 @@
-## Hybrid Kernels: Balancing Monolithic and Microkernel Approaches
+# Hybrid Kernels: Balancing Monolithic and Microkernel Approaches
 
 Hybrid kernels emerged as a practical compromise between pure microkernel architecture and traditional monolithic designs. This approach recognizes that while the microkernel's modularity offers significant advantages, certain critical services benefit from running in kernel space.
 
