@@ -604,9 +604,9 @@ class BookViewer {
                 <div id="main-content" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                     <!-- Header -->
                     <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-600 flex-shrink-0">
-                        <div class="relative flex items-center w-full py-4">
-                            <!-- Left Side: Hamburger + Title with left padding only -->
-                            <div class="flex items-center space-x-4 flex-1 px-4 lg:px-8 pr-80">
+                        <div class="flex items-center w-full py-4 px-4 lg:px-8">
+                            <!-- Left Side: Hamburger + Title -->
+                            <div class="flex items-center space-x-4">
                                 <button 
                                     onclick="bookViewer.toggleSidebar()"
                                     class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden"
@@ -621,8 +621,8 @@ class BookViewer {
                                 </div>
                             </div>
                             
-                            <!-- Right Side: Navigation buttons positioned absolutely at right edge -->
-                            <div class="absolute right-0 top-1/2 transform -translate-y-1/2 flex items-center space-x-2 bg-white dark:bg-gray-800 pl-4 pr-2 py-2">
+                            <!-- Right Side: Navigation buttons pushed to extreme right with margin-left auto -->
+                            <div class="flex items-center space-x-2 flex-shrink-0 ml-auto">
                                 <!-- Dark Mode Toggle -->
                                 <button 
                                     onclick="toggleDarkMode()"
