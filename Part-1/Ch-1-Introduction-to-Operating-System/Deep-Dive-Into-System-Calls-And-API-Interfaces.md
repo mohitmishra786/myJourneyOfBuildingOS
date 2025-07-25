@@ -4,7 +4,7 @@
 
 An operating system (OS) serves as the fundamental bridge between computer hardware and user applications. It's the system software that manages hardware resources and provides various services for computer programs. Think of it as a orchestra conductor, coordinating various components to work harmoniously while ensuring efficient resource utilization and system security.
 
-## Deep Dive: System Calls and API Interfaces
+## System Calls and API Interfaces
 
 ### Understanding System Calls
 
