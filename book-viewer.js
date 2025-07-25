@@ -505,7 +505,7 @@ class BookViewer {
 
                     <!-- Content Area -->
                     <main class="flex-1 overflow-y-auto">
-                        <div class="max-w-4xl mx-auto px-4 lg:px-8 py-8">
+                        <div class="w-full px-4 lg:px-8 py-8">
                             <article id="content" class="prose prose-lg dark:prose-dark max-w-none bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 lg:p-12">
                                 <div class="animate-pulse space-y-4">
                                     <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
@@ -516,7 +516,7 @@ class BookViewer {
                             
                             <!-- Page Navigation Footer -->
                             <footer class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 w-full">
                                     <div class="text-sm text-gray-500 dark:text-gray-400">
                                         Page ${this.currentPage + 1} of ${currentChapter.pages.length} in this chapter
                                     </div>

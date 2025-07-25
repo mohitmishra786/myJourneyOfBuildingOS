@@ -397,16 +397,7 @@
             min-height: 100vh;
         }
         
-        /* Root container */
-        #root {
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        .app-container {
-            display: flex;
-            height: 100vh;
-        }
+
         
         /* Sidebar layout */
         #sidebar {
@@ -685,6 +676,50 @@
             flex: 1;
             min-width: 0;
             overflow-x: hidden;
+            width: 100%;
+        }
+        
+        /* Article content should take full available width */
+        #content {
+            max-width: none !important;
+            width: 100%;
+        }
+        
+        /* Ensure main content container uses full width */
+        main {
+            width: 100%;
+        }
+        
+        /* Container width adjustments */
+        .max-w-4xl {
+            max-width: 100% !important;
+            width: 100%;
+        }
+        
+        /* Ensure no unwanted margins or padding */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            overflow-x: hidden;
+        }
+        
+        /* Root container should use full viewport */
+        #root {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+        
+        /* Flex container adjustments */
+        .flex {
+            width: 100%;
+        }
+        
+        /* Remove any constraining widths */
+        .prose {
+            max-width: none !important;
+            width: 100%;
         }
         
         /* Progress bar animation */
