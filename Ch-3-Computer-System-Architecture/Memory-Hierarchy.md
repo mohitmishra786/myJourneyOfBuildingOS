@@ -9,29 +9,29 @@ The memory hierarchy principle exploits locality of reference, a fundamental cha
 Modern memory hierarchies typically span from processor registers through multiple cache levels to main memory and secondary storage. Each level trades access speed for storage capacity, creating a pyramid structure where faster memories have limited capacity while slower memories provide extensive storage space. This arrangement enables systems to deliver high performance for active data while maintaining large storage capacity for complete program and data sets.
 
 ```plantuml
-@startuml memory_hierarchy
-!define RECTANGLE rectangle
+@startuml
 skinparam backgroundColor white
+skinparam rectangleBorderColor black
+skinparam rectangleFontColor black
 
-RECTANGLE "Memory Hierarchy" as HIERARCHY {
-  RECTANGLE "CPU Registers\n32-64 registers\n0.25 ns access" as REGISTERS #ff6666
-  RECTANGLE "L1 Cache\n32-64 KB\n0.5-1 ns access" as L1_CACHE #ff9966
-  RECTANGLE "L2 Cache\n256KB-1MB\n3-10 ns access" as L2_CACHE #ffcc66
-  RECTANGLE "L3 Cache\n8-32 MB\n10-20 ns access" as L3_CACHE #ffff66
-  RECTANGLE "Main Memory\n4-64 GB\n50-100 ns access" as MAIN_MEM #ccff66
-  RECTANGLE "SSD Storage\n256GB-4TB\n100μs access" as SSD #99ff66
-  RECTANGLE "Hard Disk\n1-20 TB\n5-10 ms access" as HDD #66ff99
+rectangle "Memory Hierarchy" as HIERARCHY {
+  rectangle "CPU Registers\n32-64 registers\n0.25 ns access" as REGISTERS #ff6666
+  rectangle "L1 Cache\n32-64 KB\n0.5-1 ns access" as L1_CACHE #ff9966
+  rectangle "L2 Cache\n256KB-1MB\n3-10 ns access" as L2_CACHE #ffcc66
+  rectangle "L3 Cache\n8-32 MB\n10-20 ns access" as L3_CACHE #ffff66
+  rectangle "Main Memory\n4-64 GB\n50-100 ns access" as MAIN_MEM #ccff66
+  rectangle "SSD Storage\n256GB-4TB\n100us access" as SSD #99ff66
+  rectangle "Hard Disk\n1-20 TB\n5-10 ms access" as HDD #66ff99
 }
 
-REGISTERS -> L1_CACHE : Miss
-L1_CACHE -> L2_CACHE : Miss
-L2_CACHE -> L3_CACHE : Miss
-L3_CACHE -> MAIN_MEM : Miss
-MAIN_MEM -> SSD : Page Fault
-SSD -> HDD : Archive Access
+REGISTERS --> L1_CACHE : Miss
+L1_CACHE --> L2_CACHE : Miss
+L2_CACHE --> L3_CACHE : Miss
+L3_CACHE --> MAIN_MEM : Miss
+MAIN_MEM --> SSD : Page Fault
+SSD --> HDD : Archive Access
 
 note right of HIERARCHY : Speed decreases\nCapacity increases\nCost per bit decreases
-
 @enduml
 ```
 
