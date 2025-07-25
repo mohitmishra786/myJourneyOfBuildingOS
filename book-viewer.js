@@ -13,8 +13,112 @@ class BookViewer {
     init() {
         console.log('Initializing BookViewer');
         console.log('Total chapters:', this.chapters.length);
+        
+        // Initialize URL routing
+        this.initializeRouting();
+        
         this.render();
         this.loadContent();
+        
+        // Set initial URL after content loads
+        setTimeout(() => {
+            this.updateURL();
+        }, 100);
+    }
+
+    initializeRouting() {
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (event) => {
+            if (event.state) {
+                this.currentChapter = event.state.chapter;
+                this.currentPage = event.state.page;
+                this.render();
+                this.loadContent();
+            } else {
+                this.loadFromURL();
+            }
+        });
+
+        // Load initial page from URL
+        this.loadFromURL();
+    }
+
+    loadFromURL() {
+        // Check for redirected path from 404.html
+        let path = sessionStorage.getItem('redirectPath');
+        if (path) {
+            sessionStorage.removeItem('redirectPath');
+        } else {
+            path = window.location.pathname.replace(this.basePath, '').replace(/^\//, '');
+        }
+        
+        console.log('Loading from URL path:', path);
+        
+        if (!path || path === '' || path === 'index.html') {
+            // Default to first page
+            this.currentChapter = 0;
+            this.currentPage = 0;
+            return;
+        }
+
+        // Find matching page by converting path to slug
+        for (let chapterIndex = 0; chapterIndex < this.chapters.length; chapterIndex++) {
+            const chapter = this.chapters[chapterIndex];
+            for (let pageIndex = 0; pageIndex < chapter.pages.length; pageIndex++) {
+                const page = chapter.pages[pageIndex];
+                const pageSlug = this.createSlugFromPath(page.path);
+                
+                console.log(`Comparing "${path}" with "${pageSlug}"`);
+                
+                if (path === pageSlug) {
+                    console.log(`Found match: Chapter ${chapterIndex}, Page ${pageIndex}`);
+                    this.currentChapter = chapterIndex;
+                    this.currentPage = pageIndex;
+                    return;
+                }
+            }
+        }
+        
+        console.log('No matching page found, defaulting to first page');
+        // If no match found, default to first page
+        this.currentChapter = 0;
+        this.currentPage = 0;
+    }
+
+    createSlugFromPath(filePath) {
+        // Extract filename without extension
+        const filename = filePath.split('/').pop().replace('.md', '');
+        
+        // Convert to URL-friendly slug
+        return filename
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    updateURL() {
+        const currentPage = this.chapters[this.currentChapter].pages[this.currentPage];
+        const slug = this.createSlugFromPath(currentPage.path);
+        
+        // For GitHub Pages, include the repository path
+        const newURL = this.isGitHubPages ? 
+            `/myJourneyOfBuildingOS/${slug}` : 
+            `/${slug}`;
+        
+        const state = {
+            chapter: this.currentChapter,
+            page: this.currentPage,
+            title: currentPage.title
+        };
+        
+        // Update browser URL and title
+        document.title = `${currentPage.title} - OS Learning Journey`;
+        
+        // Update URL without page reload
+        if (window.location.pathname !== newURL) {
+            history.pushState(state, currentPage.title, newURL);
+            console.log('URL updated to:', newURL);
+        }
     }
 
     async loadContent() {
@@ -42,73 +146,72 @@ class BookViewer {
             console.log('Content loaded, length:', text.length);
             
             // Process PlantUML diagrams before parsing markdown
-            const processedText = await this.processPlantUML(text);
+            let processedText = await this.processPlantUML(text);
+            
+            // Fix local image paths for GitHub Pages
+            processedText = this.processLocalImages(processedText);
+            
             const html = marked.parse(processedText);
             
             document.getElementById('content').innerHTML = html;
             
             // Apply syntax highlighting and other enhancements
             this.enhanceContent();
-            this.updateNavigationState();
+            
+            // Update URL to reflect current page
+            this.updateURL();
+            
         } catch (error) {
             console.error('Error loading content:', error);
             document.getElementById('content').innerHTML = `
-                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">Error loading content</h3>
-                            <div class="mt-2 text-sm text-red-700">
-                                <p>${error.message}</p>
-                                <p class="mt-1 text-xs">Path attempted: ${currentPath}</p>
-                            </div>
-                        </div>
+                <div class="text-center py-12">
+                    <div class="text-red-500 dark:text-red-400 text-lg font-medium mb-4">
+                        Failed to load content
+                    </div>
+                    <div class="text-gray-600 dark:text-gray-300 text-sm">
+                        ${error.message}
                     </div>
                 </div>
             `;
         }
     }
 
-    async processPlantUML(content) {
-        // Find PlantUML code blocks
-        const plantUMLRegex = /```plantuml\n([\s\S]*?)\n```/g;
-        
-        let processedContent = content;
-        let match;
-        
-        while ((match = plantUMLRegex.exec(content)) !== null) {
-            const plantUMLCode = match[1];
+    async processPlantUML(text) {
+        // Use the working PlantUML.com service instead of Kroki
+        return text.replace(/```plantuml\n([\s\S]*?)\n```/g, (match, diagram) => {
+            const cleanDiagram = diagram.trim();
             
-            // Use PlantUML text encoding service instead of trying to compress
-            const imageUrl = this.createPlantUMLUrl(plantUMLCode);
+            // Add @startuml and @enduml if not present
+            let uml = cleanDiagram;
+            if (!uml.startsWith('@startuml')) {
+                uml = '@startuml\n' + uml;
+            }
+            if (!uml.endsWith('@enduml')) {
+                uml = uml + '\n@enduml';
+            }
             
-            // Replace the PlantUML code block with an image
-            const replacement = `<div class="plantuml-container my-8">
-                <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-                    <img src="${imageUrl}" alt="PlantUML Diagram" class="max-w-full h-auto mx-auto" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <div style="display:none;" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p class="text-yellow-800 text-sm font-medium">⚠️ Could not load PlantUML diagram</p>
-                        <details class="mt-2">
-                            <summary class="text-xs text-yellow-600 cursor-pointer hover:text-yellow-800">Show PlantUML source code</summary>
-                            <pre class="mt-2 text-xs bg-yellow-100 p-3 rounded overflow-x-auto font-mono">${plantUMLCode}</pre>
-                        </details>
-                    </div>
-                </div>
-            </div>`;
+            // Use hex encoding for PlantUML.com which was working
+            const hexEncoded = this.hexEncode(uml);
+            const plantUMLUrl = `https://www.plantuml.com/plantuml/svg/~h${hexEncoded}`;
             
-            processedContent = processedContent.replace(match[0], replacement);
+            return `<div class="plantuml-container my-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-600">
+    <img src="${plantUMLUrl}" alt="PlantUML Diagram" class="max-w-full h-auto mx-auto" />
+</div>`;
+        });
+    }
+
+    // Remove the problematic encodeForKroki method and use the working hex encode
+    hexEncode(text) {
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+            result += text.charCodeAt(i).toString(16).padStart(2, '0');
         }
-        
-        return processedContent;
+        return result;
     }
 
     // Create PlantUML URL using a working encoding method
     createPlantUMLUrl(plantuml_text) {
+        // This method is now consolidated into processPlantUML
         // Add @startuml and @enduml if not present
         let uml = plantuml_text.trim();
         if (!uml.startsWith('@startuml')) {
@@ -118,39 +221,8 @@ class BookViewer {
             uml = uml + '\n@enduml';
         }
         
-        try {
-            // Method 1: Try PlantUML server with simple URL encoding
-            const simpleEncoded = encodeURIComponent(uml);
-            const plantUMLUrl = `https://www.plantuml.com/plantuml/png/~h${this.hexEncode(uml)}`;
-            return plantUMLUrl;
-        } catch (e) {
-            console.warn('PlantUML encoding failed, using alternative service:', e);
-            try {
-                // Method 2: Use plantuml-server.com as backup
-                const base64 = btoa(uml);
-                return `https://plantuml-server.kkeisuke.dev/svg/${base64}`;
-            } catch (e2) {
-                console.error('All PlantUML services failed:', e2);
-                return this.createPlantUMLFallback(plantuml_text);
-            }
-        }
-    }
-
-    // Simple hex encoding for PlantUML
-    hexEncode(text) {
-        let result = '';
-        for (let i = 0; i < text.length; i++) {
-            result += text.charCodeAt(i).toString(16).padStart(2, '0');
-        }
-        return result;
-    }
-
-    // Encode for Kroki service (keeping as backup)
-    encodeForKroki(text) {
-        return btoa(unescape(encodeURIComponent(text)))
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=/g, '');
+        const hexEncoded = this.hexEncode(uml);
+        return `https://www.plantuml.com/plantuml/svg/~h${hexEncoded}`;
     }
 
     // Create a fallback SVG when PlantUML fails
@@ -186,15 +258,19 @@ class BookViewer {
         return `data:image/svg+xml;base64,${btoa(svgContent)}`;
     }
 
-    // Remove old encoding methods
-    plantUMLEncode(text) {
-        // This method is no longer used
-        return this.encodeForKroki(text);
-    }
 
-    // Backup encoding method
-    encodePlantUMLText(text) {
-        return this.encodeForKroki(text);
+
+    processLocalImages(text) {
+        // Fix local image paths for GitHub Pages compatibility
+        if (this.isGitHubPages) {
+            // Replace image paths that start with /images/ to include the repository path
+            text = text.replace(/!\[([^\]]*)\]\(\/images\//g, `![$1](${this.basePath}/images/`);
+            
+            // Also handle relative image paths
+            text = text.replace(/!\[([^\]]*)\]\(images\//g, `![$1](${this.basePath}/images/`);
+        }
+        
+        return text;
     }
 
     enhanceContent() {
@@ -330,6 +406,7 @@ class BookViewer {
     goToPage(chapterIndex, pageIndex) {
         this.currentChapter = chapterIndex;
         this.currentPage = pageIndex;
+        
         if (this.sidebarVisible) {
             this.toggleSidebar(); // Close sidebar after navigation on mobile
         }
@@ -338,33 +415,33 @@ class BookViewer {
     }
 
     goToNextPage() {
-        console.log('Attempting to go to next page');
-        const currentChapterPages = this.chapters[this.currentChapter].pages.length;
+        const currentChapter = this.chapters[this.currentChapter];
         
-        if (this.currentPage < currentChapterPages - 1) {
-            console.log('Moving to next page in current chapter');
+        if (this.currentPage < currentChapter.pages.length - 1) {
             this.currentPage++;
         } else if (this.currentChapter < this.chapters.length - 1) {
-            console.log('Moving to first page of next chapter');
             this.currentChapter++;
             this.currentPage = 0;
         }
         
+        if (this.sidebarVisible) {
+            this.toggleSidebar(); // Close sidebar after navigation on mobile
+        }
         this.render();
         this.loadContent();
     }
 
     goToPrevPage() {
-        console.log('Attempting to go to previous page');
         if (this.currentPage > 0) {
-            console.log('Moving to previous page in current chapter');
             this.currentPage--;
         } else if (this.currentChapter > 0) {
-            console.log('Moving to last page of previous chapter');
             this.currentChapter--;
             this.currentPage = this.chapters[this.currentChapter].pages.length - 1;
         }
         
+        if (this.sidebarVisible) {
+            this.toggleSidebar(); // Close sidebar after navigation on mobile
+        }
         this.render();
         this.loadContent();
     }

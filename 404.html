@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS Learning Journey - Redirecting...</title>
+    <script>
+        // Redirect to index.html with the original path for client-side routing
+        const path = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+        
+        // Store the path so the app can read it
+        sessionStorage.setItem('redirectPath', path);
+        
+        // Redirect to index.html
+        window.location.replace('/myJourneyOfBuildingOS/' + search + hash);
+    </script>
+</head>
+<body>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h2>Redirecting...</h2>
+        <p>Please wait while we redirect you to the correct page.</p>
+    </div>
+</body>
+</html> 
