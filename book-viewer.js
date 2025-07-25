@@ -52,35 +52,73 @@ class BookViewer {
             path = window.location.pathname.replace(this.basePath, '').replace(/^\//, '');
         }
         
-        console.log('Loading from URL path:', path);
+        console.log('🔍 Loading from URL path:', path);
+        console.log('🔍 Base path:', this.basePath);
+        console.log('🔍 Full pathname:', window.location.pathname);
         
         if (!path || path === '' || path === 'index.html') {
-            // Default to first page
+            console.log('📍 Default to first page (empty path)');
             this.currentChapter = 0;
             this.currentPage = 0;
             return;
         }
 
-        // Find matching page by converting path to slug
+        // Enhanced matching with detailed logging
+        console.log('🔍 Starting page matching for path:', path);
+        let allPages = [];
+        
         for (let chapterIndex = 0; chapterIndex < this.chapters.length; chapterIndex++) {
             const chapter = this.chapters[chapterIndex];
+            console.log(`📖 Chapter ${chapterIndex}: ${chapter.title}`);
+            
             for (let pageIndex = 0; pageIndex < chapter.pages.length; pageIndex++) {
                 const page = chapter.pages[pageIndex];
                 const pageSlug = this.createSlugFromPath(page.path);
                 
-                console.log(`Comparing "${path}" with "${pageSlug}"`);
+                // Store all pages for debugging
+                allPages.push({
+                    chapterIndex,
+                    pageIndex,
+                    title: page.title,
+                    path: page.path,
+                    slug: pageSlug
+                });
+                
+                console.log(`   📄 Page ${pageIndex}: "${page.title}"`);
+                console.log(`      File: ${page.path}`);
+                console.log(`      Slug: ${pageSlug}`);
+                console.log(`      Match? ${path === pageSlug ? '✅' : '❌'}`);
                 
                 if (path === pageSlug) {
-                    console.log(`Found match: Chapter ${chapterIndex}, Page ${pageIndex}`);
+                    console.log(`🎯 FOUND MATCH! Chapter ${chapterIndex}, Page ${pageIndex}: ${page.title}`);
                     this.currentChapter = chapterIndex;
                     this.currentPage = pageIndex;
                     return;
                 }
+                
+                // Also try partial matching for better debugging
+                if (pageSlug.includes(path) || path.includes(pageSlug)) {
+                    console.log(`🔄 Partial match found: "${pageSlug}" contains or is contained in "${path}"`);
+                }
             }
         }
         
-        console.log('No matching page found, defaulting to first page');
-        // If no match found, default to first page
+        console.log('❌ No exact match found!');
+        console.log('📝 All available pages:');
+        allPages.forEach(page => {
+            console.log(`   ${page.slug} -> ${page.title} (${page.path})`);
+        });
+        
+        // Try fuzzy matching as fallback
+        const fuzzyMatch = this.findFuzzyMatch(path, allPages);
+        if (fuzzyMatch) {
+            console.log(`🔄 Using fuzzy match: ${fuzzyMatch.title}`);
+            this.currentChapter = fuzzyMatch.chapterIndex;
+            this.currentPage = fuzzyMatch.pageIndex;
+            return;
+        }
+        
+        console.log('📍 No matches found, defaulting to first page');
         this.currentChapter = 0;
         this.currentPage = 0;
     }
@@ -90,10 +128,58 @@ class BookViewer {
         const filename = filePath.split('/').pop().replace('.md', '');
         
         // Convert to URL-friendly slug
-        return filename
+        const slug = filename
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
+            
+        console.log(`🔧 Slug creation: "${filename}" -> "${slug}"`);
+        return slug;
+    }
+
+    findFuzzyMatch(targetPath, allPages) {
+        console.log('🔍 Starting fuzzy matching for:', targetPath);
+        
+        // Try different matching strategies
+        for (let page of allPages) {
+            // Strategy 1: Check if the target path contains the page slug
+            if (targetPath.includes(page.slug)) {
+                console.log(`🎯 Fuzzy match (contains): ${page.slug} found in ${targetPath}`);
+                return page;
+            }
+            
+            // Strategy 2: Check if the page slug contains the target path
+            if (page.slug.includes(targetPath)) {
+                console.log(`🎯 Fuzzy match (contained): ${targetPath} found in ${page.slug}`);
+                return page;
+            }
+            
+            // Strategy 3: Remove common words and try matching
+            const simplifiedTarget = targetPath.replace(/-?(and|or|the|of|in|to|into|a|an)(-|$)/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+            const simplifiedSlug = page.slug.replace(/-?(and|or|the|of|in|to|into|a|an)(-|$)/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+            
+            if (simplifiedTarget === simplifiedSlug) {
+                console.log(`🎯 Fuzzy match (simplified): "${simplifiedTarget}" matches "${simplifiedSlug}"`);
+                return page;
+            }
+        }
+        
+        // Strategy 4: Try word-by-word matching
+        const targetWords = targetPath.split('-').filter(word => word.length > 2);
+        
+        for (let page of allPages) {
+            const pageWords = page.slug.split('-').filter(word => word.length > 2);
+            const matchedWords = targetWords.filter(word => pageWords.includes(word));
+            
+            // If more than 70% of words match, consider it a match
+            if (matchedWords.length / targetWords.length > 0.7) {
+                console.log(`🎯 Fuzzy match (word overlap): ${matchedWords.length}/${targetWords.length} words match`);
+                return page;
+            }
+        }
+        
+        console.log('❌ No fuzzy matches found');
+        return null;
     }
 
     updateURL() {
@@ -519,8 +605,9 @@ class BookViewer {
                     <!-- Header -->
                     <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-600 flex-shrink-0">
                         <div class="px-4 lg:px-8 py-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-4">
+                            <div class="flex items-center w-full">
+                                <!-- Left Side: Hamburger + Title -->
+                                <div class="flex items-center space-x-4 flex-1">
                                     <button 
                                         onclick="bookViewer.toggleSidebar()"
                                         class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden"
@@ -535,7 +622,8 @@ class BookViewer {
                                     </div>
                                 </div>
                                 
-                                <div class="flex items-center space-x-4">
+                                <!-- Right Side: Navigation buttons at absolute right edge -->
+                                <div class="flex items-center space-x-2 flex-shrink-0">
                                     <!-- Dark Mode Toggle -->
                                     <button 
                                         onclick="toggleDarkMode()"
@@ -543,31 +631,30 @@ class BookViewer {
                                         title="Toggle dark mode"
                                     ></button>
                                     
-                                    <div class="flex items-center space-x-3">
-                                        <button 
-                                            onclick="bookViewer.goToPrevPage()"
-                                            ${isFirstPage ? 'disabled' : ''}
-                                            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                            title="Previous page"
-                                        >
-                                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                            Previous
-                                        </button>
-                                        
-                                        <button
-                                            onclick="bookViewer.goToNextPage()"
-                                            ${isLastPage ? 'disabled' : ''}
-                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                            title="Next page"
-                                        >
-                                            Next
-                                            <svg class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-                                    </div>
+                                    <!-- Navigation buttons -->
+                                    <button 
+                                        onclick="bookViewer.goToPrevPage()"
+                                        ${isFirstPage ? 'disabled' : ''}
+                                        class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        title="Previous page"
+                                    >
+                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Previous
+                                    </button>
+                                    
+                                    <button
+                                        onclick="bookViewer.goToNextPage()"
+                                        ${isLastPage ? 'disabled' : ''}
+                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        title="Next page"
+                                    >
+                                        Next
+                                        <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                             
@@ -593,27 +680,18 @@ class BookViewer {
                             
                             <!-- Page Navigation Footer -->
                             <footer class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 w-full">
+                                <div class="flex justify-between items-center w-full">
                                     <div class="text-sm text-gray-500 dark:text-gray-400">
                                         Page ${this.currentPage + 1} of ${currentChapter.pages.length} in this chapter
                                     </div>
                                     
-                                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                                        <button 
-                                            onclick="bookViewer.goToPrevPage()"
-                                            ${isFirstPage ? 'disabled' : ''}
-                                            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                            ${this.getPreviousPageTitle()}
-                                        </button>
-                                        
+                                    <!-- Only Next button positioned at right extreme -->
+                                    <div class="flex justify-end">
                                         <button
                                             onclick="bookViewer.goToNextPage()"
                                             ${isLastPage ? 'disabled' : ''}
-                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="Next page"
                                         >
                                             ${this.getNextPageTitle()}
                                             <svg class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
