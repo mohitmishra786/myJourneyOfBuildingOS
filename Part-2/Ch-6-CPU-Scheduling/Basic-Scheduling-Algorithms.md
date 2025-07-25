@@ -1,426 +1,837 @@
 # Basic Scheduling Algorithms
 
-Fundamental scheduling algorithms form the foundation of modern CPU scheduling systems, each addressing different performance objectives and system requirements. Understanding these basic algorithms provides essential insights into scheduling theory and practical implementation considerations.
+The foundation of CPU scheduling rests upon several fundamental algorithms that demonstrate core scheduling principles and trade-offs. These basic algorithms serve as building blocks for more sophisticated scheduling systems and provide clear illustrations of how different approaches impact system performance and user experience.
+
+Understanding these algorithms requires examining both their theoretical properties and practical implementation challenges. Each algorithm embodies specific design philosophies and optimization goals, making them suitable for different computing environments and workload characteristics.
 
 ## First-Come-First-Serve (FCFS) Scheduling
 
-First-Come-First-Serve represents the simplest possible scheduling algorithm, executing processes in the exact order they arrive in the system. This straightforward approach mimics real-world queuing systems and provides intuitive fairness guarantees.
+First-Come-First-Serve represents the simplest possible scheduling algorithm, processing requests in strict arrival order without any reordering or prioritization. This straightforward approach mirrors everyday queuing systems and provides predictable, fair treatment based solely on arrival time.
 
-FCFS implementation requires only a simple FIFO queue to maintain arriving processes. When the CPU becomes available, the scheduler removes the first process from the queue and allocates the processor until the process completes or blocks for I/O operations.
+FCFS scheduling operates as a non-preemptive algorithm, allowing each process to run to completion before considering the next process in the queue. This characteristic eliminates context switching overhead during process execution but can lead to significant performance issues when long-running processes precede shorter ones.
 
-The algorithm's simplicity makes it easy to implement and understand, with minimal overhead for scheduling decisions. No complex priority calculations, time slice management, or preemption mechanisms are required, resulting in efficient operation and predictable behavior.
-
-However, FCFS suffers from the convoy effect, where short processes must wait behind long-running processes, dramatically increasing average waiting times. This problem becomes particularly severe when CPU-intensive processes arrive before I/O-intensive processes, blocking the entire queue until the long processes complete.
+The algorithm's implementation requires only a basic FIFO queue data structure, making it extremely simple to implement and understand. However, this simplicity comes at the cost of potentially poor average waiting times, particularly when the workload includes a mix of short and long processes.
 
 ```plantuml
 @startuml
-!theme plain
-title "First-Come-First-Serve Scheduling Algorithm Analysis"
+title "FCFS Scheduler Components"
 
-package "FCFS Implementation" {
-  
-  class FCFSScheduler {
-    + ready_queue: fifo_queue
-    + current_process: process_reference
+class FCFSScheduler {
+    +ready_queue: ProcessQueue
+    +current_process: Process
+    +total_waiting_time: int
     --
-    + enqueue_process(process): void
-    + dequeue_next_process(): process_reference
-    + calculate_waiting_times(): time_statistics
-    + analyze_convoy_effect(): convoy_metrics
-  }
-  
-  rectangle "Process Execution Timeline" {
-    participant "Process P1" as p1
-    participant "Process P2" as p2  
-    participant "Process P3" as p3
-    participant "CPU" as cpu
-    
-    p1 -> cpu : "Burst: 24ms"
-    note over cpu : "P1 executes completely"
-    
-    p2 -> cpu : "Burst: 3ms"  
-    note over cpu : "P2 waits 24ms, then executes"
-    
-    p3 -> cpu : "Burst: 3ms"
-    note over cpu : "P3 waits 27ms, then executes"
-    
-    note bottom : "Average waiting time: (0+24+27)/3 = 17ms"
-  }
+    +enqueue_process(): void
+    +dequeue_process(): Process
+    +execute_process(): void
+    +calculate_metrics(): Metrics
 }
 
-package "Performance Characteristics" {
-  
-  rectangle "Convoy Effect Demonstration" {
-    component [Long Process P1] as long_proc
-    component [Short Process P2] as short_p2
-    component [Short Process P3] as short_p3
-    
-    long_proc --> short_p2 : "blocks"
-    short_p2 --> short_p3 : "delays"
-    
-    note bottom : "One long process\nblocks entire queue"
-  }
-  
-  card "FCFS Metrics" {
-    usecase "Waiting Time: Variable" as wait_var
-    usecase "Turnaround Time: Poor for short jobs" as turn_poor
-    usecase "Response Time: Same as waiting time" as resp_same
-    usecase "Throughput: Depends on job mix" as through_dep
-  }
-  
-  card "FCFS Advantages" {
-    usecase "Simple Implementation" as simple_impl
-    usecase "No Starvation" as no_starv
-    usecase "Low Overhead" as low_over
-    usecase "Fair Ordering" as fair_order
-  }
+class ProcessQueue {
+    +processes[]: Process
+    +front: int
+    +rear: int
+    +size: int
+    --
+    +enqueue(): void
+    +dequeue(): Process
+    +is_empty(): bool
+    +get_size(): int
 }
 
-FCFSScheduler --> long_proc : "executes_in_order"
-wait_var --> turn_poor : "contributes_to"
-simple_impl --> no_starv : "guarantees"
+FCFSScheduler --> ProcessQueue : uses
 @enduml
+```
+
+### FCFS Implementation and Analysis
+
+Here's our complete FCFS implementation with detailed performance tracking:
+
+```c
+// FCFS scheduling implementation from scheduling_algorithms_demo.c
+void schedule_fcfs(scheduler_context_t *ctx) {
+    // Sort processes by arrival time to establish FCFS order
+    qsort(ctx->processes, ctx->process_count, sizeof(process_t), compare_arrival_time);
+    
+    ctx->current_time = 0;
+    printf("=== FCFS Scheduling Execution ===\n");
+    
+    for (int i = 0; i < ctx->process_count; i++) {
+        process_t *process = &ctx->processes[i];
+        
+        // Handle CPU idle time if process hasn't arrived yet
+        if (ctx->current_time < process->arrival_time) {
+            int idle_time = process->arrival_time - ctx->current_time;
+            printf("CPU idle for %d time units (waiting for %s)\n", idle_time, process->name);
+            ctx->current_time = process->arrival_time;
+        }
+        
+        // Record process start time and calculate response time
+        process->start_time = ctx->current_time;
+        process->response_time = process->start_time - process->arrival_time;
+        
+        printf("Time %d: Process %s starts execution (burst: %d)\n",
+               ctx->current_time, process->name, process->burst_time);
+        
+        // Execute process to completion (non-preemptive)
+        process->state = PROCESS_RUNNING;
+        ctx->current_time += process->burst_time;
+        process->completion_time = ctx->current_time;
+        process->state = PROCESS_TERMINATED;
+        
+        // Calculate performance metrics
+        process->turnaround_time = process->completion_time - process->arrival_time;
+        process->waiting_time = process->turnaround_time - process->burst_time;
+        
+        printf("Time %d: Process %s completes (waited: %d, turnaround: %d)\n",
+               ctx->current_time, process->name, process->waiting_time, process->turnaround_time);
+    }
+}
+
+// Comparison function for sorting by arrival time
+int compare_arrival_time(const void *a, const void *b) {
+    process_t *p1 = (process_t *)a;
+    process_t *p2 = (process_t *)b;
+    return p1->arrival_time - p2->arrival_time;
+}
+
+// Demonstrate convoy effect in FCFS
+void demonstrate_convoy_effect(void) {
+    scheduler_context_t convoy_scenario;
+    initialize_scheduler_context(&convoy_scenario, ALGORITHM_FCFS, 0);
+    
+    // Create scenario: one long process followed by many short processes
+    convoy_scenario.process_count = 5;
+    
+    // Long process arrives first
+    convoy_scenario.processes[0] = (process_t){
+        .pid = 1, .arrival_time = 0, .burst_time = 20, .priority = 1,
+        .remaining_time = 20, .state = PROCESS_NEW, .first_execution = true
+    };
+    strcpy(convoy_scenario.processes[0].name, "LONG");
+    
+    // Short processes arrive shortly after
+    for (int i = 1; i < 5; i++) {
+        convoy_scenario.processes[i] = (process_t){
+            .pid = i + 1, .arrival_time = 1, .burst_time = 2, .priority = 1,
+            .remaining_time = 2, .state = PROCESS_NEW, .first_execution = true
+        };
+        snprintf(convoy_scenario.processes[i].name, MAX_NAME_LENGTH, "SHORT%d", i);
+    }
+    
+    printf("=== Convoy Effect Demonstration ===\n");
+    printf("Scenario: One long process (20 units) followed by four short processes (2 units each)\n");
+    
+    schedule_fcfs(&convoy_scenario);
+    
+    // Analyze convoy effect impact
+    double total_waiting = 0;
+    for (int i = 0; i < convoy_scenario.process_count; i++) {
+        total_waiting += convoy_scenario.processes[i].waiting_time;
+    }
+    
+    printf("\nConvoy Effect Analysis:\n");
+    printf("Long process waiting time: %d\n", convoy_scenario.processes[0].waiting_time);
+    printf("Average short process waiting time: %.2f\n", 
+           (total_waiting - convoy_scenario.processes[0].waiting_time) / 4.0);
+    printf("Total average waiting time: %.2f\n", total_waiting / convoy_scenario.process_count);
+    printf("Note: Short processes are severely delayed by the long process\n");
+}
 ```
 
 ## Shortest Job First (SJF) Scheduling
 
-Shortest Job First scheduling selects the process with the smallest CPU burst time for execution, optimizing average waiting time through mathematical principles proven by queuing theory.
+Shortest Job First scheduling represents an optimal algorithm for minimizing average waiting time, assuming perfect knowledge of process execution times. This algorithm prioritizes processes with the smallest CPU burst requirements, theoretically providing the best possible average waiting time performance.
 
-SJF algorithms can operate in non-preemptive or preemptive modes. Non-preemptive SJF runs each selected process to completion, while preemptive SJF (Shortest Remaining Time First) can interrupt running processes when shorter jobs arrive.
+SJF scheduling can operate in both preemptive and non-preemptive modes, with the preemptive variant known as Shortest Remaining Time First (SRTF). The non-preemptive version selects the shortest available job when the CPU becomes idle, while the preemptive version can interrupt currently running processes when shorter jobs arrive.
 
-The algorithm's optimality for minimizing average waiting time makes it theoretically attractive. Mathematical analysis proves that SJF produces the minimum possible average waiting time for any given set of processes with known burst times.
-
-Practical implementation faces significant challenges due to the impossibility of precisely predicting future CPU burst times. Real systems must estimate burst times using historical data, exponential averaging, or other prediction techniques, introducing uncertainty and potential performance degradation.
-
-Starvation represents another serious concern with SJF scheduling. Long processes may wait indefinitely if short processes continue arriving, creating unfair resource allocation that violates basic scheduling equity principles.
+The primary limitation of SJF lies in the practical impossibility of accurately predicting future CPU burst times. Real systems must rely on estimation techniques, such as exponential averaging of previous burst times, which introduces uncertainty and potential suboptimality into the scheduling decisions.
 
 ```plantuml
 @startuml
-!theme plain
-title "Shortest Job First Scheduling Analysis and Prediction"
+title "SJF Scheduler Implementation"
 
-package "SJF Algorithm Implementation" {
-  
-  class SJFScheduler {
-    + ready_queue: priority_queue_by_burst_time
-    + burst_time_predictor: prediction_engine
-    + historical_data: burst_history
+class SJFScheduler {
+    +ready_queue: PriorityQueue
+    +burst_predictor: BurstPredictor
+    +total_processes: int
     --
-    + predict_next_burst(process): predicted_time
-    + select_shortest_job(): process_reference
-    + update_prediction_accuracy(): accuracy_metrics
-    + handle_starvation_prevention(): mitigation_actions
-  }
-  
-  class BurstTimePredictor {
-    + exponential_average: averaging_engine
-    + historical_bursts: time_series
-    + prediction_accuracy: accuracy_tracker
-    --
-    + exponential_averaging(alpha, history): predicted_burst
-    + adaptive_prediction(): dynamic_prediction
-    + evaluate_prediction_quality(): quality_metrics
-  }
+    +schedule_shortest_job(): Process
+    +predict_burst_time(): int
+    +update_statistics(): void
 }
 
-package "SJF Execution Example" {
-  
-  rectangle "Process Set Analysis" {
-    component [Process A: 6ms] as proc_a
-    component [Process B: 8ms] as proc_b
-    component [Process C: 7ms] as proc_c
-    component [Process D: 3ms] as proc_d
-    
-    proc_d --> proc_a : "Execute first (shortest)"
-    proc_a --> proc_c : "Execute second"
-    proc_c --> proc_b : "Execute last (longest)"
-    
-    note bottom : "Execution order: D(3), A(6), C(7), B(8)\nAverage waiting: (0+3+9+16)/4 = 7ms"
-  }
-  
-  rectangle "Comparison with FCFS" {
-    card "SJF Scheduling" {
-      usecase "Average Wait: 7ms" as sjf_wait
-      usecase "Optimal for given burst times" as sjf_opt
-    }
-    
-    card "FCFS Alternative" {
-      usecase "Average Wait: 10.25ms" as fcfs_wait
-      usecase "Order: A(6), B(8), C(7), D(3)" as fcfs_order
-    }
-    
-    sjf_wait --> fcfs_wait : "46% improvement"
-  }
-}
-
-package "Prediction Mechanisms" {
-  
-  class ExponentialAveraging {
-    + alpha: smoothing_factor
-    + previous_prediction: time_value
-    + actual_burst: time_value
+class BurstPredictor {
+    +history[]: int
+    +alpha: double
+    +predicted_burst: int
     --
-    + calculate_next_prediction(): predicted_time
-    + formula: "T(n+1) = α * t(n) + (1-α) * T(n)"
-  }
-  
-  rectangle "Prediction Accuracy Analysis" {
-    component [Short-term Accuracy] as short_acc
-    component [Long-term Trends] as long_trends
-    component [Burst Variation] as burst_var
-    
-    short_acc --> long_trends : "trades_off_with"
-    burst_var --> short_acc : "affects"
-    
-    note bottom : "α controls responsiveness\nvs stability trade-off"
-  }
+    +exponential_average(): int
+    +update_prediction(): void
+    +get_prediction(): int
 }
 
-SJFScheduler --> BurstTimePredictor : "uses"
-BurstTimePredictor --> ExponentialAveraging : "implements"
-proc_d --> sjf_wait : "contributes_to_optimal"
+class PriorityQueue {
+    +processes[]: Process
+    +size: int
+    --
+    +insert_by_burst_time(): void
+    +extract_shortest(): Process
+    +peek_shortest(): Process
+}
+
+SJFScheduler --> BurstPredictor : uses
+SJFScheduler --> PriorityQueue : manages
 @enduml
 ```
 
-## Round Robin Scheduling
+### SJF Implementation with Burst Time Prediction
 
-Round Robin scheduling allocates CPU time in fixed time slices or quanta, cycling through ready processes in circular fashion. This approach combines the fairness of FCFS with improved responsiveness for interactive systems.
+```c
+// SJF scheduling implementation
+void schedule_sjf(scheduler_context_t *ctx) {
+    printf("=== SJF (Non-preemptive) Scheduling ===\n");
+    
+    ctx->current_time = 0;
+    int completed = 0;
+    bool *is_completed = calloc(ctx->process_count, sizeof(bool));
+    
+    while (completed < ctx->process_count) {
+        int shortest_job = -1;
+        int min_burst_time = INT_MAX;
+        
+        // Find shortest job among arrived processes
+        for (int i = 0; i < ctx->process_count; i++) {
+            if (!is_completed[i] && 
+                ctx->processes[i].arrival_time <= ctx->current_time &&
+                ctx->processes[i].burst_time < min_burst_time) {
+                shortest_job = i;
+                min_burst_time = ctx->processes[i].burst_time;
+            }
+        }
+        
+        if (shortest_job == -1) {
+            // No process available, advance time to next arrival
+            int next_arrival = INT_MAX;
+            for (int i = 0; i < ctx->process_count; i++) {
+                if (!is_completed[i] && ctx->processes[i].arrival_time > ctx->current_time) {
+                    if (ctx->processes[i].arrival_time < next_arrival) {
+                        next_arrival = ctx->processes[i].arrival_time;
+                    }
+                }
+            }
+            if (next_arrival != INT_MAX) {
+                printf("CPU idle from time %d to %d\n", ctx->current_time, next_arrival);
+                ctx->current_time = next_arrival;
+            }
+            continue;
+        }
+        
+        // Execute the shortest job
+        process_t *process = &ctx->processes[shortest_job];
+        process->start_time = ctx->current_time;
+        process->response_time = process->start_time - process->arrival_time;
+        
+        printf("Time %d: Process %s starts (burst: %d, waited: %d)\n",
+               ctx->current_time, process->name, process->burst_time, process->response_time);
+        
+        ctx->current_time += process->burst_time;
+        process->completion_time = ctx->current_time;
+        process->turnaround_time = process->completion_time - process->arrival_time;
+        process->waiting_time = process->turnaround_time - process->burst_time;
+        
+        printf("Time %d: Process %s completes (turnaround: %d)\n",
+               ctx->current_time, process->name, process->turnaround_time);
+        
+        is_completed[shortest_job] = true;
+        completed++;
+    }
+    
+    free(is_completed);
+}
 
-The time quantum represents the critical parameter in Round Robin scheduling, determining the balance between responsiveness and overhead. Short quanta provide better response times but increase context switching overhead, while long quanta reduce overhead but may harm responsiveness.
+// Exponential averaging for burst time prediction
+typedef struct {
+    double alpha;          // Smoothing factor (0 < alpha < 1)
+    int *history;         // Previous actual burst times
+    double *predictions;  // Predicted burst times
+    int count;           // Number of predictions made
+} burst_predictor_t;
 
-Process execution continues until the time quantum expires or the process blocks for I/O operations. When the quantum expires, the scheduler preempts the running process, places it at the end of the ready queue, and allocates the CPU to the next process in the queue.
+// Initialize burst time predictor
+burst_predictor_t* init_burst_predictor(double alpha, int max_processes) {
+    burst_predictor_t *predictor = malloc(sizeof(burst_predictor_t));
+    predictor->alpha = alpha;
+    predictor->history = calloc(max_processes, sizeof(int));
+    predictor->predictions = calloc(max_processes, sizeof(double));
+    predictor->count = 0;
+    return predictor;
+}
 
-Round Robin provides good response time characteristics for interactive systems because each process receives regular CPU access regardless of its total execution requirements. No process can monopolize the CPU for extended periods, preventing the convoy effect that plagues FCFS scheduling.
+// Predict next burst time using exponential averaging
+int predict_next_burst(burst_predictor_t *predictor, int process_id, int initial_estimate) {
+    if (predictor->count == 0) {
+        // First prediction uses initial estimate
+        predictor->predictions[process_id] = initial_estimate;
+        return initial_estimate;
+    }
+    
+    // τ(n+1) = α * t(n) + (1-α) * τ(n)
+    // where t(n) is actual burst time and τ(n) is predicted burst time
+    int actual_previous = predictor->history[process_id];
+    double predicted_previous = predictor->predictions[process_id];
+    
+    double new_prediction = predictor->alpha * actual_previous + 
+                           (1.0 - predictor->alpha) * predicted_previous;
+    
+    predictor->predictions[process_id] = new_prediction;
+    return (int)round(new_prediction);
+}
+
+// Update predictor with actual burst time
+void update_burst_predictor(burst_predictor_t *predictor, int process_id, int actual_burst) {
+    predictor->history[process_id] = actual_burst;
+    predictor->count++;
+}
+
+// Demonstrate SJF optimality
+void demonstrate_sjf_optimality(void) {
+    printf("=== SJF Optimality Demonstration ===\n");
+    
+    // Create test scenario with known burst times
+    scheduler_context_t sjf_test, fcfs_test;
+    
+    // Initialize both contexts with same process set
+    initialize_scheduler_context(&sjf_test, ALGORITHM_SJF, 0);
+    initialize_scheduler_context(&fcfs_test, ALGORITHM_FCFS, 0);
+    
+    // Create processes with different burst times, all arriving at time 0
+    int burst_times[] = {8, 4, 9, 5};
+    char *names[] = {"P1", "P2", "P3", "P4"};
+    
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 2; j++) { // Copy to both contexts
+            scheduler_context_t *ctx = (j == 0) ? &sjf_test : &fcfs_test;
+            
+            ctx->processes[i] = (process_t){
+                .pid = i + 1,
+                .arrival_time = 0,
+                .burst_time = burst_times[i],
+                .priority = 1,
+                .remaining_time = burst_times[i],
+                .state = PROCESS_NEW,
+                .first_execution = true
+            };
+            strcpy(ctx->processes[i].name, names[i]);
+        }
+        sjf_test.process_count = fcfs_test.process_count = 4;
+    }
+    
+    printf("Process burst times: P1=8, P2=4, P3=9, P4=5\n\n");
+    
+    // Run FCFS
+    printf("FCFS Scheduling:\n");
+    schedule_fcfs(&fcfs_test);
+    
+    double fcfs_avg_waiting = 0;
+    for (int i = 0; i < 4; i++) {
+        fcfs_avg_waiting += fcfs_test.processes[i].waiting_time;
+    }
+    fcfs_avg_waiting /= 4;
+    
+    printf("FCFS average waiting time: %.2f\n\n", fcfs_avg_waiting);
+    
+    // Run SJF
+    printf("SJF Scheduling:\n");
+    schedule_sjf(&sjf_test);
+    
+    double sjf_avg_waiting = 0;
+    for (int i = 0; i < 4; i++) {
+        sjf_avg_waiting += sjf_test.processes[i].waiting_time;
+    }
+    sjf_avg_waiting /= 4;
+    
+    printf("SJF average waiting time: %.2f\n", sjf_avg_waiting);
+    printf("Improvement: %.2f time units (%.1f%% better)\n",
+           fcfs_avg_waiting - sjf_avg_waiting,
+           (fcfs_avg_waiting - sjf_avg_waiting) / fcfs_avg_waiting * 100);
+}
+```
+
+## Shortest Remaining Time First (SRTF) Scheduling
+
+Shortest Remaining Time First represents the preemptive version of SJF scheduling, where the scheduler can interrupt a currently running process if a newly arrived process has a shorter remaining execution time. This preemptive capability enables SRTF to achieve even better average waiting times than non-preemptive SJF.
+
+SRTF requires continuous monitoring of process arrival times and remaining execution times. When a new process arrives, the scheduler compares its burst time with the remaining time of the currently executing process, preempting if the new process is shorter.
+
+The algorithm's preemptive nature introduces additional context switching overhead, which may offset some of the theoretical performance gains in systems with significant context switch costs.
 
 ```plantuml
 @startuml
-!theme plain
-title "Round Robin Scheduling Implementation and Analysis"
+title "SRTF Scheduling Flow"
 
-package "Round Robin Scheduler" {
-  
-  class RoundRobinScheduler {
-    + ready_queue: circular_queue
-    + time_quantum: quantum_duration
-    + quantum_timer: countdown_timer
-    + context_switch_overhead: overhead_measurement
-    --
-    + allocate_time_slice(): void
-    + handle_quantum_expiry(): void
-    + calculate_optimal_quantum(): quantum_value
-    + measure_response_times(): response_statistics
-  }
-  
-  rectangle "Quantum Selection Analysis" {
-    component [Small Quantum (1ms)] as small_q
-    component [Medium Quantum (10ms)] as med_q
-    component [Large Quantum (100ms)] as large_q
-    
-    small_q --> med_q : "Better responsiveness\nHigher overhead"
-    med_q --> large_q : "Balanced approach\nModerate overhead"
-    large_q : "Lower overhead\nWorse responsiveness"
-    
-    note bottom : "Optimal quantum depends on\nworkload and context switch cost"
-  }
-}
-
-package "Round Robin Execution Timeline" {
-  
-  participant "Process P1" as p1
-  participant "Process P2" as p2
-  participant "Process P3" as p3
-  participant "CPU Scheduler" as scheduler
-  
-  == First Round (Quantum = 4ms) ==
-  scheduler -> p1 : "Allocate CPU for 4ms"
-  p1 -> scheduler : "Quantum expired, remaining: 20ms"
-  
-  scheduler -> p2 : "Allocate CPU for 4ms"
-  p2 -> scheduler : "Quantum expired, remaining: 2ms"
-  
-  scheduler -> p3 : "Allocate CPU for 4ms"
-  p3 -> scheduler : "Quantum expired, remaining: 4ms"
-  
-  == Second Round ==
-  scheduler -> p1 : "Allocate CPU for 4ms"
-  p1 -> scheduler : "Quantum expired, remaining: 16ms"
-  
-  scheduler -> p2 : "Allocate CPU for 2ms"
-  p2 -> scheduler : "Process completed"
-  
-  scheduler -> p3 : "Allocate CPU for 4ms"
-  p3 -> scheduler : "Process completed"
-  
-  note over scheduler : "P1 continues until completion\nResponse times: P1=0, P2=4, P3=8"
-}
-
-package "Performance Analysis Framework" {
-  
-  class QuantumOptimizer {
-    + workload_characteristics: workload_profile
-    + context_switch_cost: overhead_measurement
-    + response_time_requirements: time_constraints
-    --
-    + analyze_workload_patterns(): workload_analysis
-    + calculate_optimal_quantum(): quantum_recommendation
-    + evaluate_quantum_performance(): performance_metrics
-  }
-  
-  rectangle "Trade-off Analysis" {
-    card "Small Quantum Effects" {
-      usecase "Excellent Response Time" as excel_resp
-      usecase "High Context Switch Overhead" as high_overhead
-      usecase "CPU Cache Pollution" as cache_poll
-    }
-    
-    card "Large Quantum Effects" {
-      usecase "Low Context Switch Overhead" as low_overhead
-      usecase "Poor Response Time" as poor_resp
-      usecase "Approaches FCFS Behavior" as fcfs_like
-    }
-    
-    excel_resp --> high_overhead : "trade_off"
-    low_overhead --> poor_resp : "trade_off"
-  }
-}
-
-RoundRobinScheduler --> small_q : "configures"
-QuantumOptimizer --> excel_resp : "evaluates"
-p1 --> scheduler : "preempted_by_quantum"
+start
+:New process arrives or current process completes;
+:Update remaining times for all processes;
+if (Is there a ready process?) then (yes)
+  :Find process with shortest remaining time;
+  if (Different from current process?) then (yes)
+    :Perform context switch;
+    :Start/resume shortest process;
+  else (no)
+    :Continue current process;
+  endif
+else (no)
+  :CPU remains idle;
+endif
+:Execute for one time unit;
+if (Current process completed?) then (yes)
+  :Mark process as completed;
+  :Calculate metrics;
+else (no)
+  :Decrement remaining time;
+endif
+if (More processes to schedule?) then (yes)
+  :Advance time;
+else (no)
+  stop
+endif
 @enduml
 ```
 
-## Priority Scheduling
+### SRTF Implementation with Preemption
 
-Priority scheduling assigns each process a priority value and allocates CPU time based on these priorities, ensuring that more important processes receive preferential treatment. This approach enables fine-grained control over resource allocation based on process importance, user requirements, or system policies.
+```c
+// SRTF (Shortest Remaining Time First) scheduling implementation
+void schedule_srtf(scheduler_context_t *ctx) {
+    printf("=== SRTF (Preemptive SJF) Scheduling ===\n");
+    
+    ctx->current_time = 0;
+    int completed = 0;
+    int current_process = -1;
+    bool *is_completed = calloc(ctx->process_count, sizeof(bool));
+    
+    // Initialize remaining times
+    for (int i = 0; i < ctx->process_count; i++) {
+        ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
+    }
+    
+    while (completed < ctx->process_count) {
+        // Check for new arrivals and find process with shortest remaining time
+        int shortest_process = -1;
+        int min_remaining_time = INT_MAX;
+        
+        for (int i = 0; i < ctx->process_count; i++) {
+            if (!is_completed[i] && 
+                ctx->processes[i].arrival_time <= ctx->current_time &&
+                ctx->processes[i].remaining_time < min_remaining_time) {
+                shortest_process = i;
+                min_remaining_time = ctx->processes[i].remaining_time;
+            }
+        }
+        
+        if (shortest_process == -1) {
+            // No process available, advance to next arrival
+            int next_arrival = INT_MAX;
+            for (int i = 0; i < ctx->process_count; i++) {
+                if (!is_completed[i] && ctx->processes[i].arrival_time > ctx->current_time) {
+                    if (ctx->processes[i].arrival_time < next_arrival) {
+                        next_arrival = ctx->processes[i].arrival_time;
+                    }
+                }
+            }
+            if (next_arrival != INT_MAX) {
+                printf("CPU idle from time %d to %d\n", ctx->current_time, next_arrival);
+                ctx->current_time = next_arrival;
+            }
+            continue;
+        }
+        
+        // Check if we need to preempt current process
+        if (current_process != shortest_process) {
+            if (current_process != -1) {
+                printf("Time %d: Preempting %s (remaining: %d) for %s (remaining: %d)\n",
+                       ctx->current_time,
+                       ctx->processes[current_process].name,
+                       ctx->processes[current_process].remaining_time,
+                       ctx->processes[shortest_process].name,
+                       ctx->processes[shortest_process].remaining_time);
+            }
+            
+            current_process = shortest_process;
+            
+            // Record first execution time for response time calculation
+            if (ctx->processes[current_process].first_execution) {
+                ctx->processes[current_process].start_time = ctx->current_time;
+                ctx->processes[current_process].response_time = 
+                    ctx->current_time - ctx->processes[current_process].arrival_time;
+                ctx->processes[current_process].first_execution = false;
+                
+                printf("Time %d: Process %s starts first execution (response time: %d)\n",
+                       ctx->current_time,
+                       ctx->processes[current_process].name,
+                       ctx->processes[current_process].response_time);
+            }
+        }
+        
+        // Execute current process for one time unit
+        ctx->processes[current_process].remaining_time--;
+        ctx->current_time++;
+        
+        // Check if process completed
+        if (ctx->processes[current_process].remaining_time == 0) {
+            ctx->processes[current_process].completion_time = ctx->current_time;
+            ctx->processes[current_process].turnaround_time = 
+                ctx->processes[current_process].completion_time - 
+                ctx->processes[current_process].arrival_time;
+            ctx->processes[current_process].waiting_time = 
+                ctx->processes[current_process].turnaround_time - 
+                ctx->processes[current_process].burst_time;
+            
+            printf("Time %d: Process %s completes (turnaround: %d, waiting: %d)\n",
+                   ctx->current_time,
+                   ctx->processes[current_process].name,
+                   ctx->processes[current_process].turnaround_time,
+                   ctx->processes[current_process].waiting_time);
+            
+            is_completed[current_process] = true;
+            current_process = -1;
+            completed++;
+        }
+    }
+    
+    free(is_completed);
+}
 
-Static priority assignment sets process priorities at creation time and maintains them throughout execution. This approach provides predictable behavior and simplifies implementation but cannot adapt to changing process characteristics or system conditions.
+// Compare SRTF performance against SJF and FCFS
+void compare_preemptive_vs_non_preemptive(void) {
+    printf("=== Preemptive vs Non-preemptive Comparison ===\n");
+    
+    // Create test scenario with overlapping arrivals
+    typedef struct {
+        char name[4];
+        int arrival_time;
+        int burst_time;
+    } test_process_t;
+    
+    test_process_t test_data[] = {
+        {"P1", 0, 8},
+        {"P2", 1, 4},
+        {"P3", 2, 9},
+        {"P4", 3, 5}
+    };
+    
+    printf("Test scenario:\n");
+    for (int i = 0; i < 4; i++) {
+        printf("%s: arrival=%d, burst=%d\n", 
+               test_data[i].name, test_data[i].arrival_time, test_data[i].burst_time);
+    }
+    printf("\n");
+    
+    // Test non-preemptive SJF
+    scheduler_context_t sjf_ctx;
+    initialize_scheduler_context(&sjf_ctx, ALGORITHM_SJF, 0);
+    sjf_ctx.process_count = 4;
+    
+    for (int i = 0; i < 4; i++) {
+        sjf_ctx.processes[i] = (process_t){
+            .pid = i + 1,
+            .arrival_time = test_data[i].arrival_time,
+            .burst_time = test_data[i].burst_time,
+            .priority = 1,
+            .remaining_time = test_data[i].burst_time,
+            .state = PROCESS_NEW,
+            .first_execution = true
+        };
+        strcpy(sjf_ctx.processes[i].name, test_data[i].name);
+    }
+    
+    printf("Non-preemptive SJF:\n");
+    schedule_sjf(&sjf_ctx);
+    
+    double sjf_avg_waiting = 0;
+    for (int i = 0; i < 4; i++) {
+        sjf_avg_waiting += sjf_ctx.processes[i].waiting_time;
+    }
+    sjf_avg_waiting /= 4;
+    
+    // Test preemptive SRTF
+    scheduler_context_t srtf_ctx;
+    initialize_scheduler_context(&srtf_ctx, ALGORITHM_SRTF, 0);
+    srtf_ctx.process_count = 4;
+    
+    for (int i = 0; i < 4; i++) {
+        srtf_ctx.processes[i] = (process_t){
+            .pid = i + 1,
+            .arrival_time = test_data[i].arrival_time,
+            .burst_time = test_data[i].burst_time,
+            .priority = 1,
+            .remaining_time = test_data[i].burst_time,
+            .state = PROCESS_NEW,
+            .first_execution = true
+        };
+        strcpy(srtf_ctx.processes[i].name, test_data[i].name);
+    }
+    
+    printf("\nPreemptive SRTF:\n");
+    schedule_srtf(&srtf_ctx);
+    
+    double srtf_avg_waiting = 0;
+    for (int i = 0; i < 4; i++) {
+        srtf_avg_waiting += srtf_ctx.processes[i].waiting_time;
+    }
+    srtf_avg_waiting /= 4;
+    
+    printf("\n=== Performance Comparison ===\n");
+    printf("SJF average waiting time: %.2f\n", sjf_avg_waiting);
+    printf("SRTF average waiting time: %.2f\n", srtf_avg_waiting);
+    printf("SRTF improvement: %.2f time units\n", sjf_avg_waiting - srtf_avg_waiting);
+}
+```
 
-Dynamic priority adjustment modifies process priorities during execution based on various factors such as aging, resource usage, or performance feedback. This flexibility enables better system adaptation but introduces additional complexity and potential instability.
+## Round Robin (RR) Scheduling
 
-Priority scheduling can operate in preemptive or non-preemptive modes. Preemptive priority scheduling immediately interrupts lower-priority processes when higher-priority processes become ready, while non-preemptive priority scheduling waits for the current process to complete or block.
+Round Robin scheduling addresses the fairness and responsiveness limitations of previous algorithms by allocating fixed time slices (quantum) to each process in circular order. This time-sharing approach ensures that no process monopolizes the CPU for extended periods, providing predictable response times for interactive applications.
 
-The major challenge with priority scheduling is indefinite postponement or starvation, where low-priority processes may never execute if high-priority processes continuously arrive. Aging mechanisms address this problem by gradually increasing the priority of waiting processes.
+The time quantum parameter critically affects Round Robin performance. Small quantum values provide good response times but increase context switching overhead, while large quantum values reduce overhead but may compromise responsiveness and approach FCFS behavior.
+
+Round Robin scheduling guarantees that each process receives CPU time within a bounded interval, making it suitable for time-sharing systems where fairness and responsiveness take priority over optimal average waiting times.
 
 ```plantuml
 @startuml
-!theme plain
-title "Priority Scheduling Implementation and Starvation Prevention"
+title "Round Robin Process Queue"
 
-package "Priority Scheduling System" {
-  
-  class PriorityScheduler {
-    + priority_queues: multi_level_queue
-    + aging_mechanism: aging_engine
-    + priority_inheritance: inheritance_handler
-    + starvation_detector: starvation_monitor
+class RoundRobinScheduler {
+    +ready_queue: CircularQueue
+    +time_quantum: int
+    +current_time_slice: int
     --
-    + select_highest_priority(): process_reference
-    + apply_aging_algorithm(): void
-    + handle_priority_inversion(): void
-    + prevent_starvation(): mitigation_actions
-  }
-  
-  class AgingMechanism {
-    + aging_rate: priority_increment
-    + aging_interval: time_interval
-    + maximum_priority: priority_limit
-    --
-    + increment_waiting_priorities(): void
-    + calculate_age_based_priority(wait_time): priority_value
-    + reset_priority_after_execution(): void
-  }
-  
-  class PriorityInheritanceHandler {
-    + resource_ownership: ownership_tracking
-    + blocking_relationships: dependency_graph
-    --
-    + detect_priority_inversion(): inversion_events
-    + inherit_priority(holder, requester): void
-    + restore_original_priority(): void
-  }
+    +schedule_next_process(): Process
+    +handle_time_quantum_expiry(): void
+    +perform_context_switch(): void
 }
 
-package "Priority Queue Structure" {
-  
-  rectangle "Multi-level Priority Queues" {
-    component [Real-time Priority (0-99)] as rt_priority
-    component [Normal Priority (100-139)] as normal_priority
-    component [Idle Priority (140+)] as idle_priority
-    
-    rt_priority --> normal_priority : "Higher precedence"
-    normal_priority --> idle_priority : "Higher precedence"
-    
-    note bottom : "Lower numbers indicate\nhigher priority"
-  }
-  
-  rectangle "Priority Assignment Examples" {
-    card "System Processes" {
-      usecase "Kernel threads: 0-20" as kernel_threads
-      usecase "Real-time tasks: 21-99" as rt_tasks
-    }
-    
-    card "User Processes" {
-      usecase "Interactive: 100-119" as interactive
-      usecase "Batch: 120-139" as batch
-    }
-    
-    card "Background Tasks" {
-      usecase "System daemons: 140+" as daemons
-    }
-    
-    kernel_threads --> rt_tasks : "system_critical"
-    interactive --> batch : "user_responsive"
-  }
-}
-
-package "Starvation Prevention Mechanisms" {
-  
-  class StarvationPrevention {
-    + wait_time_tracking: time_tracker
-    + priority_boost_threshold: time_threshold
-    + fairness_metrics: fairness_monitor
+class CircularQueue {
+    +processes[]: Process
+    +front: int
+    +rear: int
+    +size: int
     --
-    + monitor_process_waiting(): monitoring_status
-    + apply_priority_boost(): boost_action
-    + ensure_eventual_execution(): guarantee_mechanism
-  }
-  
-  rectangle "Aging Algorithm Implementation" {
-    component [Monitor Wait Times] as monitor_wait
-    component [Calculate Age Factor] as calc_age
-    component [Boost Priority] as boost_priority
-    component [Reset After Execution] as reset_priority
-    
-    monitor_wait --> calc_age : "periodically"
-    calc_age --> boost_priority : "when_threshold_exceeded"
-    boost_priority --> reset_priority : "after_execution"
-    
-    note bottom : "Gradual priority increase\nprevents indefinite postponement"
-  }
+    +enqueue_process(): void
+    +dequeue_process(): Process
+    +rotate_queue(): void
 }
 
-PriorityScheduler --> AgingMechanism : "uses"
-PriorityScheduler --> PriorityInheritanceHandler : "coordinates_with"
-rt_priority --> StarvationPrevention : "may_cause_starvation_of"
-monitor_wait --> boost_priority : "triggers"
-
-note bottom of PriorityScheduler : "Balances priority\nrespect with fairness"
+RoundRobinScheduler --> CircularQueue : manages
 @enduml
 ```
 
-## Algorithm Comparison and Selection Criteria
+### Round Robin Implementation with Time Quantum Management
 
-Selecting appropriate scheduling algorithms requires understanding the trade-offs between different approaches and matching algorithm characteristics to system requirements and workload patterns.
+```c
+// Round Robin scheduling implementation
+void schedule_round_robin(scheduler_context_t *ctx) {
+    printf("=== Round Robin Scheduling (Quantum: %d) ===\n", ctx->time_quantum);
+    
+    // Initialize circular ready queue
+    int *ready_queue = malloc(ctx->process_count * sizeof(int));
+    int front = 0, rear = 0, queue_size = 0;
+    
+    ctx->current_time = 0;
+    int completed = 0;
+    bool *is_completed = calloc(ctx->process_count, sizeof(bool));
+    bool *is_in_queue = calloc(ctx->process_count, sizeof(bool));
+    
+    // Initialize remaining times
+    for (int i = 0; i < ctx->process_count; i++) {
+        ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
+    }
+    
+    // Add processes that arrive at time 0 to ready queue
+    for (int i = 0; i < ctx->process_count; i++) {
+        if (ctx->processes[i].arrival_time == 0) {
+            ready_queue[rear] = i;
+            rear = (rear + 1) % ctx->process_count;
+            queue_size++;
+            is_in_queue[i] = true;
+        }
+    }
+    
+    while (completed < ctx->process_count) {
+        // Check for new arrivals at current time
+        for (int i = 0; i < ctx->process_count; i++) {
+            if (!is_completed[i] && !is_in_queue[i] && 
+                ctx->processes[i].arrival_time <= ctx->current_time) {
+                ready_queue[rear] = i;
+                rear = (rear + 1) % ctx->process_count;
+                queue_size++;
+                is_in_queue[i] = true;
+                printf("Time %d: Process %s arrives and joins ready queue\n",
+                       ctx->current_time, ctx->processes[i].name);
+            }
+        }
+        
+        if (queue_size == 0) {
+            // No process in ready queue, advance to next arrival
+            int next_arrival = INT_MAX;
+            for (int i = 0; i < ctx->process_count; i++) {
+                if (!is_completed[i] && ctx->processes[i].arrival_time > ctx->current_time) {
+                    if (ctx->processes[i].arrival_time < next_arrival) {
+                        next_arrival = ctx->processes[i].arrival_time;
+                    }
+                }
+            }
+            if (next_arrival != INT_MAX) {
+                printf("CPU idle from time %d to %d\n", ctx->current_time, next_arrival);
+                ctx->current_time = next_arrival;
+            }
+            continue;
+        }
+        
+        // Get next process from ready queue
+        int current_process_idx = ready_queue[front];
+        front = (front + 1) % ctx->process_count;
+        queue_size--;
+        is_in_queue[current_process_idx] = false;
+        
+        process_t *current_process = &ctx->processes[current_process_idx];
+        
+        // Record first execution time for response time
+        if (current_process->first_execution) {
+            current_process->start_time = ctx->current_time;
+            current_process->response_time = ctx->current_time - current_process->arrival_time;
+            current_process->first_execution = false;
+            printf("Time %d: Process %s starts first execution (response time: %d)\n",
+                   ctx->current_time, current_process->name, current_process->response_time);
+        }
+        
+        // Execute process for time quantum or until completion
+        int execution_time = (current_process->remaining_time < ctx->time_quantum) ?
+                            current_process->remaining_time : ctx->time_quantum;
+        
+        printf("Time %d: Process %s executes for %d time units\n",
+               ctx->current_time, current_process->name, execution_time);
+        
+        current_process->remaining_time -= execution_time;
+        ctx->current_time += execution_time;
+        
+        // Check if process completed
+        if (current_process->remaining_time == 0) {
+            current_process->completion_time = ctx->current_time;
+            current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
+            current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
+            
+            printf("Time %d: Process %s completes (turnaround: %d, waiting: %d)\n",
+                   ctx->current_time, current_process->name,
+                   current_process->turnaround_time, current_process->waiting_time);
+            
+            is_completed[current_process_idx] = true;
+            completed++;
+        } else {
+            // Time quantum expired, add back to ready queue
+            printf("Time %d: Process %s time quantum expired (remaining: %d)\n",
+                   ctx->current_time, current_process->name, current_process->remaining_time);
+            
+            // Check for new arrivals before adding current process back
+            bool new_arrivals = false;
+            for (int i = 0; i < ctx->process_count; i++) {
+                if (!is_completed[i] && !is_in_queue[i] && 
+                    ctx->processes[i].arrival_time <= ctx->current_time) {
+                    ready_queue[rear] = i;
+                    rear = (rear + 1) % ctx->process_count;
+                    queue_size++;
+                    is_in_queue[i] = true;
+                    new_arrivals = true;
+                    printf("Time %d: Process %s arrives and joins ready queue\n",
+                           ctx->current_time, ctx->processes[i].name);
+                }
+            }
+            
+            // Add current process back to ready queue
+            ready_queue[rear] = current_process_idx;
+            rear = (rear + 1) % ctx->process_count;
+            queue_size++;
+            is_in_queue[current_process_idx] = true;
+        }
+    }
+    
+    free(ready_queue);
+    free(is_completed);
+    free(is_in_queue);
+}
 
-Performance characteristics vary significantly across algorithms. FCFS provides excellent throughput for long-running batch jobs but poor response time for interactive applications. SJF optimizes average waiting time but requires burst time prediction and may cause starvation. Round Robin provides good response time but introduces quantum-related overhead. Priority scheduling enables fine-grained control but requires careful starvation prevention.
+// Analyze impact of different time quantum values
+void analyze_time_quantum_impact(void) {
+    printf("=== Time Quantum Impact Analysis ===\n");
+    
+    // Create test workload
+    typedef struct {
+        char name[4];
+        int arrival_time;
+        int burst_time;
+    } test_process_t;
+    
+    test_process_t test_data[] = {
+        {"P1", 0, 10},
+        {"P2", 0, 8},
+        {"P3", 0, 6},
+        {"P4", 0, 4}
+    };
+    
+    int quantum_values[] = {1, 2, 4, 8, 16};
+    int num_quantums = sizeof(quantum_values) / sizeof(quantum_values[0]);
+    
+    printf("Test processes: P1(10), P2(8), P3(6), P4(4) - all arrive at time 0\n\n");
+    
+    for (int q = 0; q < num_quantums; q++) {
+        scheduler_context_t rr_ctx;
+        initialize_scheduler_context(&rr_ctx, ALGORITHM_ROUND_ROBIN, quantum_values[q]);
+        rr_ctx.process_count = 4;
+        
+        // Setup test processes
+        for (int i = 0; i < 4; i++) {
+            rr_ctx.processes[i] = (process_t){
+                .pid = i + 1,
+                .arrival_time = test_data[i].arrival_time,
+                .burst_time = test_data[i].burst_time,
+                .priority = 1,
+                .remaining_time = test_data[i].burst_time,
+                .state = PROCESS_NEW,
+                .first_execution = true
+            };
+            strcpy(rr_ctx.processes[i].name, test_data[i].name);
+        }
+        
+        printf("Time Quantum: %d\n", quantum_values[q]);
+        printf("---------------\n");
+        
+        schedule_round_robin(&rr_ctx);
+        
+        // Calculate metrics
+        double avg_waiting = 0, avg_turnaround = 0, avg_response = 0;
+        for (int i = 0; i < 4; i++) {
+            avg_waiting += rr_ctx.processes[i].waiting_time;
+            avg_turnaround += rr_ctx.processes[i].turnaround_time;
+            avg_response += rr_ctx.processes[i].response_time;
+        }
+        avg_waiting /= 4;
+        avg_turnaround /= 4;
+        avg_response /= 4;
+        
+        // Estimate context switches (simplified)
+        int total_execution = 10 + 8 + 6 + 4;
+        int estimated_context_switches = total_execution / quantum_values[q];
+        
+        printf("Avg waiting: %.2f, Avg response: %.2f, Est. context switches: %d\n",
+               avg_waiting, avg_response, estimated_context_switches);
+        printf("\n");
+    }
+    
+    printf("Observations:\n");
+    printf("- Smaller quantum: Better response time, more context switches\n");
+    printf("- Larger quantum: Approaches FCFS behavior, fewer context switches\n");
+    printf("- Optimal quantum balances responsiveness and overhead\n");
+}
+```
 
-Implementation complexity ranges from the simple FIFO queue required for FCFS to the sophisticated multi-level priority queues and aging mechanisms needed for priority scheduling. This complexity affects development effort, debugging difficulty, and runtime overhead.
-
-Fairness guarantees differ substantially between algorithms. FCFS provides perfect ordering fairness but poor performance fairness. Round Robin ensures temporal fairness through regular CPU allocation. Priority scheduling may sacrifice fairness for importance-based resource allocation.
-
-Predictability characteristics influence suitability for different application domains. FCFS and non-preemptive algorithms provide deterministic behavior valuable for real-time systems, while preemptive algorithms offer better responsiveness at the cost of timing predictability.
-
-Modern systems typically combine multiple algorithms in hierarchical or adaptive frameworks, using different algorithms for different process classes or adjusting algorithm behavior based on system conditions. Understanding these fundamental algorithms provides the foundation for designing and implementing such sophisticated scheduling systems.
-
-The choice of basic scheduling algorithm depends on system objectives, workload characteristics, implementation constraints, and performance requirements. Interactive systems favor Round Robin or priority scheduling for responsiveness, batch systems may prefer FCFS or SJF for efficiency, and real-time systems often require priority scheduling with careful timing analysis. No single algorithm optimizes all performance metrics simultaneously, making algorithm selection a critical design decision that significantly impacts overall system behavior. 
+The fundamental scheduling algorithms provide the building blocks for understanding more sophisticated scheduling systems. Each algorithm demonstrates specific trade-offs between simplicity, performance, fairness, and implementation complexity, making them suitable for different types of computing environments and application requirements. 

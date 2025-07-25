@@ -12,108 +12,92 @@ Soft real-time systems tolerate occasional deadline misses but require that the 
 
 Firm real-time systems occupy a middle ground where missing deadlines renders task results useless, but does not cause system failure. Late completion provides no benefit, but early termination of late tasks prevents resource waste. Real-time database queries and financial trading systems often exhibit firm real-time characteristics.
 
+### Real-time Task Model Implementation
+
+```c
+// Real-time task structure definition
+typedef struct {
+    int task_id;
+    int period;           // Task period in milliseconds
+    int execution_time;   // Worst-case execution time
+    int deadline;         // Relative deadline
+    int release_time;     // Next release time
+    int priority;         // Task priority
+    int remaining_time;   // Remaining execution time
+    int absolute_deadline; // Current absolute deadline
+    enum task_state state; // READY, RUNNING, BLOCKED, COMPLETED
+} rt_task_t;
+
+enum task_state {
+    TASK_READY,
+    TASK_RUNNING,
+    TASK_BLOCKED,
+    TASK_COMPLETED
+};
+
+// Calculate task utilization
+double calculate_utilization(rt_task_t *task) {
+    return (double)task->execution_time / task->period;
+}
+
+// Check if deadline is missed
+bool deadline_missed(rt_task_t *task, int current_time) {
+    return current_time > task->absolute_deadline && 
+           task->state != TASK_COMPLETED;
+}
+
+// Update absolute deadline for periodic task
+void update_absolute_deadline(rt_task_t *task, int current_time) {
+    if (current_time >= task->release_time + task->period) {
+        task->release_time += task->period;
+        task->absolute_deadline = task->release_time + task->deadline;
+        task->remaining_time = task->execution_time;
+        task->state = TASK_READY;
+    }
+}
+```
+
 ```plantuml
 @startuml
-!theme plain
-title "Real-time System Classification and Temporal Requirements"
+title "Real-time System Classification"
 
-package "Real-time System Categories" {
-  
+package "Real-time System Types" {
   class HardRealTimeSystem {
-    + deadline_guarantee: absolute_requirement
-    + failure_consequences: catastrophic
-    + timing_analysis: mathematical_proof
-    + scheduling_approach: static_priority
+    +deadline_guarantee: absolute
+    +failure_consequences: catastrophic
+    +timing_analysis: mathematical_proof
+    +scheduling_approach: static_priority
     --
-    + verify_schedulability(): boolean_guarantee
-    + handle_deadline_miss(): system_failure
-    + perform_worst_case_analysis(): timing_bounds
-    + ensure_deterministic_behavior(): predictability_guarantee
+    +verify_schedulability(): boolean
+    +handle_deadline_miss(): system_failure
+    +perform_wcet_analysis(): timing_bounds
   }
   
   class SoftRealTimeSystem {
-    + deadline_preference: statistical_goal
-    + performance_degradation: graceful
-    + timing_flexibility: adaptive_behavior
-    + scheduling_approach: dynamic_adjustment
+    +deadline_preference: statistical_goal
+    +performance_degradation: graceful
+    +timing_flexibility: adaptive
+    +scheduling_approach: dynamic
     --
-    + optimize_deadline_adherence(): best_effort
-    + handle_occasional_misses(): degraded_service
-    + balance_competing_objectives(): multi_criteria_optimization
-    + adapt_to_load_variations(): dynamic_response
+    +optimize_deadline_adherence(): best_effort
+    +handle_occasional_misses(): degraded_service
+    +balance_objectives(): multi_criteria
   }
   
   class FirmRealTimeSystem {
-    + deadline_utility: binary_value
-    + late_completion: zero_utility
-    + resource_management: efficient_allocation
-    + scheduling_approach: deadline_aware
+    +deadline_utility: binary_value
+    +late_completion: zero_utility
+    +resource_management: efficient
+    +scheduling_approach: deadline_aware
     --
-    + abort_late_tasks(): resource_recovery
-    + maximize_useful_completions(): utility_optimization
-    + manage_task_admission(): load_control
-    + implement_timeout_mechanisms(): deadline_enforcement
+    +abort_late_tasks(): resource_recovery
+    +maximize_completions(): utility_optimization
+    +manage_admission(): load_control
   }
 }
 
-package "Temporal Constraint Modeling" {
-  
-  rectangle "Task Timing Parameters" {
-    component [Release Time] as release_time
-    component [Execution Time] as exec_time
-    component [Deadline] as deadline
-    component [Period] as period
-    
-    release_time --> exec_time : "defines_start"
-    exec_time --> deadline : "bounded_by"
-    period --> release_time : "determines_next"
-    
-    note bottom : "Fundamental timing\ncharacteristics"
-  }
-  
-  rectangle "Schedulability Constraints" {
-    component [Utilization Bound] as util_bound
-    component [Response Time] as response_time
-    component [Interference Analysis] as interference
-    component [Resource Blocking] as blocking
-    
-    util_bound --> response_time : "influences"
-    interference --> blocking : "contributes_to"
-    
-    note bottom : "Mathematical conditions\nfor deadline guarantees"
-  }
-}
-
-package "Application Domains" {
-  
-  card "Hard Real-time Applications" {
-    usecase "Flight Control Systems" as flight_control
-    usecase "Medical Life Support" as medical
-    usecase "Nuclear Plant Control" as nuclear
-    usecase "Automotive Safety" as automotive
-  }
-  
-  card "Soft Real-time Applications" {
-    usecase "Video Streaming" as video
-    usecase "Online Gaming" as gaming
-    usecase "Voice Communication" as voice
-    usecase "Interactive Systems" as interactive
-  }
-  
-  card "Firm Real-time Applications" {
-    usecase "Stock Trading" as trading
-    usecase "Real-time Databases" as databases
-    usecase "Network Monitoring" as monitoring
-    usecase "Process Control" as process_control
-  }
-}
-
-HardRealTimeSystem --> flight_control : "requires"
-SoftRealTimeSystem --> video : "enables"
-FirmRealTimeSystem --> trading : "supports"
-
-release_time --> util_bound : "constrains"
-deadline --> response_time : "limits"
+HardRealTimeSystem --|> SoftRealTimeSystem : "more_strict_than"
+SoftRealTimeSystem --|> FirmRealTimeSystem : "more_flexible_than"
 @enduml
 ```
 
@@ -127,105 +111,139 @@ RMS optimality for fixed-priority scheduling means that if any fixed-priority al
 
 Utilization bound analysis provides schedulability conditions for RMS. For n tasks, the utilization bound is n(2^(1/n) - 1), which approaches ln(2) ≈ 0.693 as n increases. Task sets with total utilization below this bound are guaranteed to be schedulable under RMS.
 
+### Rate Monotonic Scheduler Implementation
+
+```c
+#include <math.h>
+
+// RMS scheduler structure
+typedef struct {
+    rt_task_t **task_set;
+    int num_tasks;
+    double utilization_bound;
+    int *priority_assignment;
+} rms_scheduler_t;
+
+// Initialize RMS scheduler
+rms_scheduler_t* init_rms_scheduler(rt_task_t **tasks, int num_tasks) {
+    rms_scheduler_t *scheduler = malloc(sizeof(rms_scheduler_t));
+    scheduler->task_set = tasks;
+    scheduler->num_tasks = num_tasks;
+    scheduler->priority_assignment = malloc(num_tasks * sizeof(int));
+    
+    // Calculate utilization bound: n(2^(1/n) - 1)
+    scheduler->utilization_bound = num_tasks * (pow(2.0, 1.0/num_tasks) - 1);
+    
+    return scheduler;
+}
+
+// Assign priorities based on periods (shorter period = higher priority)
+void assign_rms_priorities(rms_scheduler_t *scheduler) {
+    // Sort tasks by period (ascending)
+    for (int i = 0; i < scheduler->num_tasks - 1; i++) {
+        for (int j = i + 1; j < scheduler->num_tasks; j++) {
+            if (scheduler->task_set[i]->period > scheduler->task_set[j]->period) {
+                rt_task_t *temp = scheduler->task_set[i];
+                scheduler->task_set[i] = scheduler->task_set[j];
+                scheduler->task_set[j] = temp;
+            }
+        }
+    }
+    
+    // Assign priorities (0 = highest priority)
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        scheduler->task_set[i]->priority = i;
+        scheduler->priority_assignment[i] = i;
+    }
+}
+
+// Perform RMS utilization test
+bool rms_utilization_test(rms_scheduler_t *scheduler) {
+    double total_utilization = 0.0;
+    
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        total_utilization += calculate_utilization(scheduler->task_set[i]);
+    }
+    
+    return total_utilization <= scheduler->utilization_bound;
+}
+
+// Calculate response time for RMS task
+int calculate_rms_response_time(rms_scheduler_t *scheduler, int task_index) {
+    rt_task_t *task = scheduler->task_set[task_index];
+    int response_time = task->execution_time;
+    int prev_response_time = 0;
+    
+    // Iterative calculation until convergence
+    while (response_time != prev_response_time) {
+        prev_response_time = response_time;
+        response_time = task->execution_time;
+        
+        // Add interference from higher priority tasks
+        for (int i = 0; i < task_index; i++) {
+            rt_task_t *higher_task = scheduler->task_set[i];
+            int interference = (prev_response_time / higher_task->period + 1) * 
+                             higher_task->execution_time;
+            response_time += interference;
+        }
+    }
+    
+    return response_time;
+}
+
+// Select next task to run under RMS
+rt_task_t* rms_select_task(rms_scheduler_t *scheduler, int current_time) {
+    rt_task_t *selected_task = NULL;
+    int highest_priority = scheduler->num_tasks;
+    
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        rt_task_t *task = scheduler->task_set[i];
+        
+        // Update task state if new period starts
+        update_absolute_deadline(task, current_time);
+        
+        // Select ready task with highest priority
+        if (task->state == TASK_READY && 
+            task->priority < highest_priority &&
+            current_time >= task->release_time) {
+            selected_task = task;
+            highest_priority = task->priority;
+        }
+    }
+    
+    return selected_task;
+}
+```
+
 ```plantuml
 @startuml
-!theme plain
-title "Rate Monotonic Scheduling Algorithm and Analysis"
+title "Rate Monotonic Scheduling Algorithm"
 
-package "RMS Implementation" {
-  
-  class RateMonotonicScheduler {
-    + task_periods: period_array
-    + task_priorities: priority_assignment
-    + utilization_bound: mathematical_limit
-    + schedulability_test: analysis_engine
+class RMSScheduler {
+    +task_set: rt_task_t[]
+    +num_tasks: int
+    +utilization_bound: double
+    +priority_assignment: int[]
     --
-    + assign_priorities_by_period(): priority_mapping
-    + perform_utilization_test(): schedulability_result
-    + calculate_response_times(): timing_analysis
-    + verify_deadline_compliance(): guarantee_check
-  }
-  
-  class PeriodicTaskModel {
-    + task_period: time_value
-    + task_deadline: time_value
-    + execution_time: time_value
-    + priority_level: priority_value
+    +assign_priorities_by_period(): void
+    +perform_utilization_test(): boolean
+    +calculate_response_times(): int[]
+    +select_highest_priority_task(): rt_task_t*
+}
+
+class PeriodicTask {
+    +task_id: int
+    +period: int
+    +execution_time: int
+    +deadline: int
+    +priority: int
     --
-    + calculate_utilization(): utilization_factor
-    + determine_critical_instant(): worst_case_scenario
-    + analyze_interference(): interference_calculation
-  }
+    +calculate_utilization(): double
+    +check_deadline_miss(): boolean
+    +update_absolute_deadline(): void
 }
 
-package "RMS Scheduling Example" {
-  
-  rectangle "Task Set Definition" {
-    component [Task A: Period=50ms, Exec=20ms] as task_a
-    component [Task B: Period=100ms, Exec=35ms] as task_b
-    component [Task C: Period=200ms, Exec=45ms] as task_c
-    
-    task_a --> task_b : "Higher priority\n(shorter period)"
-    task_b --> task_c : "Higher priority\n(shorter period)"
-    
-    note bottom : "Priority assignment:\nA > B > C"
-  }
-  
-  rectangle "Utilization Analysis" {
-    component [Task A Utilization: 20/50 = 0.4] as util_a
-    component [Task B Utilization: 35/100 = 0.35] as util_b
-    component [Task C Utilization: 45/200 = 0.225] as util_c
-    component [Total Utilization: 0.975] as total_util
-    
-    util_a --> util_b : "plus"
-    util_b --> util_c : "plus"
-    util_c --> total_util : "equals"
-    
-    note bottom : "Utilization bound for 3 tasks:\n3(2^(1/3)-1) ≈ 0.78"
-  }
-  
-  rectangle "Schedulability Verdict" {
-    component [Utilization Test: FAIL] as util_test
-    component [Response Time Analysis: Required] as rta_required
-    component [Exact Analysis: Task C misses deadline] as exact_analysis
-    
-    util_test --> rta_required : "necessitates"
-    rta_required --> exact_analysis : "reveals"
-    
-    note bottom : "Additional analysis beyond\nutilization bound needed"
-  }
-}
-
-package "RMS Timeline Execution" {
-  
-  participant "Task A (P=50)" as ta
-  participant "Task B (P=100)" as tb
-  participant "Task C (P=200)" as tc
-  participant "CPU Scheduler" as sched
-  
-  == Time 0-50ms ==
-  sched -> ta : "Execute A (20ms)"
-  note over ta : "A completes at t=20"
-  
-  sched -> tb : "Execute B (35ms)"
-  note over tb : "B completes at t=55"
-  
-  == Time 50-100ms ==
-  sched -> ta : "Execute A again (20ms)"
-  note over ta : "A completes at t=70"
-  
-  sched -> tc : "Execute C (45ms)"
-  note over tc : "C execution interrupted"
-  
-  == Time 100ms ==
-  sched -> tb : "Execute B (higher priority)"
-  note over tb, tc : "C misses deadline\nat t=100"
-}
-
-RateMonotonicScheduler --> PeriodicTaskModel : "manages"
-task_a --> util_a : "contributes_to"
-util_test --> exact_analysis : "insufficient_for"
-ta --> sched : "highest_priority"
+RMSScheduler *-- PeriodicTask : "manages"
 @enduml
 ```
 
@@ -239,129 +257,154 @@ The utilization bound for EDF reaches 100%, meaning any task set with total util
 
 Dynamic priority assignment requires more sophisticated implementation than fixed-priority algorithms. The scheduler must continuously evaluate task deadlines and adjust priorities accordingly, increasing runtime overhead compared to static priority systems.
 
+### EDF Scheduler Implementation
+
+```c
+// EDF scheduler structure
+typedef struct {
+    rt_task_t **task_set;
+    int num_tasks;
+    rt_task_t **ready_queue;
+    int ready_count;
+} edf_scheduler_t;
+
+// Initialize EDF scheduler
+edf_scheduler_t* init_edf_scheduler(rt_task_t **tasks, int num_tasks) {
+    edf_scheduler_t *scheduler = malloc(sizeof(edf_scheduler_t));
+    scheduler->task_set = tasks;
+    scheduler->num_tasks = num_tasks;
+    scheduler->ready_queue = malloc(num_tasks * sizeof(rt_task_t*));
+    scheduler->ready_count = 0;
+    return scheduler;
+}
+
+// Compare function for deadline ordering
+int compare_deadlines(const void *a, const void *b) {
+    rt_task_t *task_a = *(rt_task_t**)a;
+    rt_task_t *task_b = *(rt_task_t**)b;
+    return task_a->absolute_deadline - task_b->absolute_deadline;
+}
+
+// Update ready queue with deadline ordering
+void update_edf_ready_queue(edf_scheduler_t *scheduler, int current_time) {
+    scheduler->ready_count = 0;
+    
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        rt_task_t *task = scheduler->task_set[i];
+        
+        // Update task state for new periods
+        update_absolute_deadline(task, current_time);
+        
+        // Add ready tasks to queue
+        if (task->state == TASK_READY && 
+            current_time >= task->release_time &&
+            task->remaining_time > 0) {
+            scheduler->ready_queue[scheduler->ready_count++] = task;
+        }
+    }
+    
+    // Sort by absolute deadline (earliest first)
+    qsort(scheduler->ready_queue, scheduler->ready_count, 
+          sizeof(rt_task_t*), compare_deadlines);
+}
+
+// Select task with earliest deadline
+rt_task_t* edf_select_task(edf_scheduler_t *scheduler, int current_time) {
+    update_edf_ready_queue(scheduler, current_time);
+    
+    if (scheduler->ready_count > 0) {
+        return scheduler->ready_queue[0]; // Task with earliest deadline
+    }
+    
+    return NULL;
+}
+
+// EDF schedulability test (simple utilization check)
+bool edf_schedulability_test(edf_scheduler_t *scheduler) {
+    double total_utilization = 0.0;
+    
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        total_utilization += calculate_utilization(scheduler->task_set[i]);
+    }
+    
+    // EDF can achieve 100% utilization
+    return total_utilization <= 1.0;
+}
+
+// Check for deadline violations
+bool check_deadline_violations(edf_scheduler_t *scheduler, int current_time) {
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        rt_task_t *task = scheduler->task_set[i];
+        if (deadline_missed(task, current_time)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Processor demand analysis for exact EDF test
+int calculate_processor_demand(edf_scheduler_t *scheduler, int interval_start, 
+                              int interval_end) {
+    int total_demand = 0;
+    
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        rt_task_t *task = scheduler->task_set[i];
+        
+        // Count task instances with deadlines in interval
+        int first_deadline = task->deadline;
+        while (first_deadline < interval_start) {
+            first_deadline += task->period;
+        }
+        
+        while (first_deadline <= interval_end) {
+            total_demand += task->execution_time;
+            first_deadline += task->period;
+        }
+    }
+    
+    return total_demand;
+}
+```
+
 ```plantuml
 @startuml
-!theme plain
-title "Earliest Deadline First Scheduling Implementation and Analysis"
+title "EDF vs RMS Comparison"
 
-package "EDF Scheduler Architecture" {
-  
-  class EarliestDeadlineFirstScheduler {
-    + ready_queue: deadline_ordered_queue
-    + absolute_deadlines: deadline_tracker
-    + utilization_monitor: utilization_analyzer
-    + deadline_miss_detector: miss_handler
+package "Scheduling Algorithms" {
+  class EDFScheduler {
+    +ready_queue: rt_task_t[]
+    +deadline_tracker: DeadlineTracker
+    +utilization_bound: 100%
     --
-    + calculate_absolute_deadline(task): deadline_value
-    + select_earliest_deadline_task(): task_reference
-    + update_dynamic_priorities(): priority_adjustment
-    + handle_deadline_violations(): miss_response
+    +select_earliest_deadline(): rt_task_t*
+    +update_dynamic_priorities(): void
+    +perform_utilization_test(): boolean
   }
   
-  class DeadlineTracker {
-    + task_deadlines: sorted_deadline_list
-    + deadline_events: event_queue
-    + miss_detection: violation_monitor
+  class RMSScheduler {
+    +priority_assignment: int[]
+    +utilization_bound: 69.3%
     --
-    + insert_task_by_deadline(): insertion_position
-    + remove_completed_task(): queue_update
-    + check_deadline_violations(): violation_status
-    + generate_deadline_events(): event_notification
-  }
-  
-  class UtilizationAnalyzer {
-    + task_utilizations: utilization_array
-    + total_utilization: utilization_sum
-    + schedulability_bound: theoretical_limit
-    --
-    + calculate_task_utilization(task): utilization_factor
-    + verify_schedulability_condition(): schedulability_result
-    + monitor_utilization_changes(): utilization_tracking
+    +assign_static_priorities(): void
+    +select_highest_priority(): rt_task_t*
+    +calculate_response_time(): int
   }
 }
 
-package "EDF vs RMS Comparison" {
-  
-  rectangle "Utilization Bounds" {
-    component [EDF Bound: 100%] as edf_bound
-    component [RMS Bound: ~69.3%] as rms_bound
-    
-    edf_bound --> rms_bound : "Superior utilization"
-    
-    note bottom : "EDF achieves optimal\nprocessor utilization"
+package "Performance Characteristics" {
+  class OptimalUtilization {
+    +edf_bound: 100%
+    +rms_bound: 69.3%
   }
   
-  rectangle "Implementation Complexity" {
-    component [EDF: Dynamic Priority] as edf_complex
-    component [RMS: Static Priority] as rms_simple
-    
-    edf_complex --> rms_simple : "Higher overhead"
-    
-    note bottom : "Trade-off between\noptimality and simplicity"
-  }
-  
-  rectangle "Predictability Characteristics" {
-    component [EDF: Load-dependent Behavior] as edf_behavior
-    component [RMS: Fixed Priority Behavior] as rms_behavior
-    
-    edf_behavior --> rms_behavior : "Less predictable"
-    
-    note bottom : "RMS provides more\npredictable timing"
+  class ImplementationComplexity {
+    +edf_overhead: high
+    +rms_overhead: low
   }
 }
 
-package "EDF Scheduling Timeline Example" {
-  
-  participant "Task X (D=30ms)" as tx
-  participant "Task Y (D=40ms)" as ty
-  participant "Task Z (D=60ms)" as tz
-  participant "EDF Scheduler" as edf_sched
-  
-  == Dynamic Priority Assignment ==
-  edf_sched -> tx : "Highest priority (earliest deadline)"
-  note over tx : "Execute until completion\nor deadline change"
-  
-  == Deadline Update Event ==
-  edf_sched -> edf_sched : "New task arrives with D=25ms"
-  edf_sched -> tx : "Preempt current task"
-  note over edf_sched : "Dynamic priority\nreassignment"
-  
-  == Optimal Utilization ==
-  edf_sched -> ty : "Execute when deadline earliest"
-  edf_sched -> tz : "Execute when deadline earliest"
-  
-  note over edf_sched : "Achieves 100% utilization\nwhen feasible"
-}
-
-package "Schedulability Analysis Framework" {
-  
-  class EDFSchedulabilityTest {
-    + utilization_test: simple_condition
-    + processor_demand_analysis: exact_test
-    + response_time_analysis: timing_verification
-    --
-    + perform_utilization_check(): pass_fail_result
-    + calculate_processor_demand(): demand_analysis
-    + verify_timing_constraints(): constraint_satisfaction
-  }
-  
-  rectangle "Schedulability Conditions" {
-    component [Necessary: U ≤ 1] as necessary
-    component [Sufficient: U ≤ 1] as sufficient
-    component [Optimal: Best possible] as optimal
-    
-    necessary --> sufficient : "Equivalent for EDF"
-    sufficient --> optimal : "Theoretical guarantee"
-    
-    note bottom : "Simple utilization test\nsufficient for EDF"
-  }
-}
-
-EarliestDeadlineFirstScheduler --> DeadlineTracker : "uses"
-EarliestDeadlineFirstScheduler --> UtilizationAnalyzer : "coordinates_with"
-edf_bound --> necessary : "enables"
-edf_complex --> optimal : "achieves"
-tx --> edf_sched : "dynamic_priority_from"
+EDFScheduler --> OptimalUtilization : "achieves better"
+RMSScheduler --> ImplementationComplexity : "simpler"
 @enduml
 ```
 
@@ -375,141 +418,307 @@ Priority Inheritance Protocol (PIP) temporarily elevates the priority of resourc
 
 Priority Ceiling Protocol (PCP) assigns each resource a priority ceiling equal to the highest priority of any task that uses the resource. Tasks can only lock resources if their priority exceeds the current system ceiling, preventing deadlock and limiting priority inversion to at most one critical section.
 
+### Priority Inheritance Protocol Implementation
+
+```c
+#include <pthread.h>
+
+// Resource structure for priority inheritance
+typedef struct {
+    int resource_id;
+    pthread_mutex_t mutex;
+    int owner_task_id;
+    int original_priority;
+    int inherited_priority;
+    bool is_locked;
+} pi_resource_t;
+
+// Task with priority inheritance support
+typedef struct {
+    rt_task_t base_task;
+    int original_priority;
+    int current_priority;
+    int *blocked_by_resources;
+    int blocked_count;
+    pthread_t thread_id;
+} pi_task_t;
+
+// Priority inheritance scheduler
+typedef struct {
+    pi_task_t **tasks;
+    pi_resource_t **resources;
+    int num_tasks;
+    int num_resources;
+    pthread_mutex_t scheduler_mutex;
+} pi_scheduler_t;
+
+// Initialize priority inheritance resource
+pi_resource_t* init_pi_resource(int resource_id) {
+    pi_resource_t *resource = malloc(sizeof(pi_resource_t));
+    resource->resource_id = resource_id;
+    pthread_mutex_init(&resource->mutex, NULL);
+    resource->owner_task_id = -1;
+    resource->original_priority = -1;
+    resource->inherited_priority = -1;
+    resource->is_locked = false;
+    return resource;
+}
+
+// Inherit priority when task blocks
+void inherit_priority(pi_scheduler_t *scheduler, int holder_id, int blocked_id) {
+    pthread_mutex_lock(&scheduler->scheduler_mutex);
+    
+    pi_task_t *holder = scheduler->tasks[holder_id];
+    pi_task_t *blocked = scheduler->tasks[blocked_id];
+    
+    // Inherit higher priority
+    if (blocked->current_priority < holder->current_priority) {
+        holder->current_priority = blocked->current_priority;
+        
+        // Update thread priority
+        struct sched_param param;
+        param.sched_priority = holder->current_priority;
+        pthread_setschedparam(holder->thread_id, SCHED_FIFO, &param);
+    }
+    
+    pthread_mutex_unlock(&scheduler->scheduler_mutex);
+}
+
+// Restore original priority when resource released
+void restore_priority(pi_scheduler_t *scheduler, int task_id, pi_resource_t *resource) {
+    pthread_mutex_lock(&scheduler->scheduler_mutex);
+    
+    pi_task_t *task = scheduler->tasks[task_id];
+    
+    // Check if task still needs elevated priority for other resources
+    int highest_inherited = task->original_priority;
+    
+    for (int i = 0; i < scheduler->num_resources; i++) {
+        pi_resource_t *res = scheduler->resources[i];
+        if (res->owner_task_id == task_id && res != resource) {
+            if (res->inherited_priority < highest_inherited) {
+                highest_inherited = res->inherited_priority;
+            }
+        }
+    }
+    
+    task->current_priority = highest_inherited;
+    
+    // Update thread priority
+    struct sched_param param;
+    param.sched_priority = task->current_priority;
+    pthread_setschedparam(task->thread_id, SCHED_FIFO, &param);
+    
+    pthread_mutex_unlock(&scheduler->scheduler_mutex);
+}
+
+// Lock resource with priority inheritance
+int pi_lock_resource(pi_scheduler_t *scheduler, int task_id, int resource_id) {
+    pi_resource_t *resource = scheduler->resources[resource_id];
+    pi_task_t *requesting_task = scheduler->tasks[task_id];
+    
+    // Try to acquire the mutex
+    if (pthread_mutex_trylock(&resource->mutex) == 0) {
+        // Successfully acquired
+        resource->owner_task_id = task_id;
+        resource->is_locked = true;
+        return 0;
+    } else {
+        // Resource is locked, implement priority inheritance
+        if (resource->owner_task_id != -1) {
+            inherit_priority(scheduler, resource->owner_task_id, task_id);
+            resource->inherited_priority = requesting_task->current_priority;
+        }
+        
+        // Block until resource is available
+        pthread_mutex_lock(&resource->mutex);
+        resource->owner_task_id = task_id;
+        resource->is_locked = true;
+        return 0;
+    }
+}
+
+// Unlock resource and restore priority
+int pi_unlock_resource(pi_scheduler_t *scheduler, int task_id, int resource_id) {
+    pi_resource_t *resource = scheduler->resources[resource_id];
+    
+    if (resource->owner_task_id != task_id) {
+        return -1; // Not the owner
+    }
+    
+    // Restore priority before releasing
+    restore_priority(scheduler, task_id, resource);
+    
+    // Release the resource
+    resource->owner_task_id = -1;
+    resource->is_locked = false;
+    resource->inherited_priority = -1;
+    
+    pthread_mutex_unlock(&resource->mutex);
+    return 0;
+}
+```
+
+### Priority Ceiling Protocol Implementation
+
+```c
+// Priority ceiling resource structure
+typedef struct {
+    int resource_id;
+    int priority_ceiling;
+    int owner_task_id;
+    pthread_mutex_t mutex;
+    bool is_locked;
+} pcp_resource_t;
+
+// System ceiling tracker
+typedef struct {
+    int current_system_ceiling;
+    pcp_resource_t **locked_resources;
+    int locked_count;
+    pthread_mutex_t ceiling_mutex;
+} system_ceiling_t;
+
+// PCP scheduler structure
+typedef struct {
+    pi_task_t **tasks;
+    pcp_resource_t **resources;
+    system_ceiling_t *system_ceiling;
+    int num_tasks;
+    int num_resources;
+} pcp_scheduler_t;
+
+// Calculate priority ceiling for resource
+int calculate_priority_ceiling(pcp_scheduler_t *scheduler, int resource_id) {
+    int ceiling = scheduler->num_tasks; // Lowest priority
+    
+    // Find highest priority of any task that uses this resource
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        pi_task_t *task = scheduler->tasks[i];
+        
+        // Check if task uses this resource (simplified check)
+        if (task->current_priority < ceiling) {
+            ceiling = task->current_priority;
+        }
+    }
+    
+    return ceiling;
+}
+
+// Update system ceiling
+void update_system_ceiling(system_ceiling_t *ceiling) {
+    pthread_mutex_lock(&ceiling->ceiling_mutex);
+    
+    ceiling->current_system_ceiling = 1000; // Initialize to lowest
+    
+    for (int i = 0; i < ceiling->locked_count; i++) {
+        pcp_resource_t *resource = ceiling->locked_resources[i];
+        if (resource->priority_ceiling < ceiling->current_system_ceiling) {
+            ceiling->current_system_ceiling = resource->priority_ceiling;
+        }
+    }
+    
+    pthread_mutex_unlock(&ceiling->ceiling_mutex);
+}
+
+// Check if task can access resource under PCP
+bool pcp_can_access_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) {
+    pi_task_t *task = scheduler->tasks[task_id];
+    pcp_resource_t *resource = scheduler->resources[resource_id];
+    
+    // Task can access if its priority is higher than system ceiling
+    return task->current_priority < scheduler->system_ceiling->current_system_ceiling ||
+           resource->owner_task_id == task_id;
+}
+
+// Lock resource under Priority Ceiling Protocol
+int pcp_lock_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) {
+    pcp_resource_t *resource = scheduler->resources[resource_id];
+    
+    // Check ceiling condition
+    if (!pcp_can_access_resource(scheduler, task_id, resource_id)) {
+        return -1; // Access denied due to ceiling violation
+    }
+    
+    // Try to acquire resource
+    if (pthread_mutex_trylock(&resource->mutex) == 0) {
+        resource->owner_task_id = task_id;
+        resource->is_locked = true;
+        
+        // Add to locked resources and update system ceiling
+        pthread_mutex_lock(&scheduler->system_ceiling->ceiling_mutex);
+        scheduler->system_ceiling->locked_resources[scheduler->system_ceiling->locked_count++] = resource;
+        pthread_mutex_unlock(&scheduler->system_ceiling->ceiling_mutex);
+        
+        update_system_ceiling(scheduler->system_ceiling);
+        return 0;
+    }
+    
+    return -1; // Resource busy
+}
+
+// Unlock resource under PCP
+int pcp_unlock_resource(pcp_scheduler_t *scheduler, int task_id, int resource_id) {
+    pcp_resource_t *resource = scheduler->resources[resource_id];
+    
+    if (resource->owner_task_id != task_id) {
+        return -1; // Not the owner
+    }
+    
+    // Remove from locked resources
+    pthread_mutex_lock(&scheduler->system_ceiling->ceiling_mutex);
+    for (int i = 0; i < scheduler->system_ceiling->locked_count; i++) {
+        if (scheduler->system_ceiling->locked_resources[i] == resource) {
+            // Shift remaining resources
+            for (int j = i; j < scheduler->system_ceiling->locked_count - 1; j++) {
+                scheduler->system_ceiling->locked_resources[j] = 
+                    scheduler->system_ceiling->locked_resources[j + 1];
+            }
+            scheduler->system_ceiling->locked_count--;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&scheduler->system_ceiling->ceiling_mutex);
+    
+    // Release resource
+    resource->owner_task_id = -1;
+    resource->is_locked = false;
+    pthread_mutex_unlock(&resource->mutex);
+    
+    // Update system ceiling
+    update_system_ceiling(scheduler->system_ceiling);
+    return 0;
+}
+```
+
 ```plantuml
 @startuml
-!theme plain
-title "Priority Inheritance and Ceiling Protocol Implementation"
+title "Priority Inversion Problem and Solutions"
 
-package "Priority Inversion Problem" {
-  
-  rectangle "Classic Priority Inversion Scenario" {
-    participant "High Priority Task H" as task_h
-    participant "Medium Priority Task M" as task_m
-    participant "Low Priority Task L" as task_l
-    participant "Shared Resource R" as resource_r
-    
-    == Priority Inversion Sequence ==
-    task_l -> resource_r : "Lock resource R"
-    task_h -> resource_r : "Request resource R (blocks)"
-    task_m -> task_m : "Preempts L (higher priority)"
-    
-    note over task_h : "H blocked indefinitely\nwhile M executes"
-    note over task_l : "L cannot execute\nto release R"
-    
-    task_m -> task_m : "Long execution period"
-    
-    note over task_h, task_l : "Unbounded priority inversion\nviolates real-time constraints"
-  }
-}
+participant "High Priority Task H" as H
+participant "Medium Priority Task M" as M  
+participant "Low Priority Task L" as L
+participant "Shared Resource R" as R
 
-package "Priority Inheritance Protocol" {
-  
-  class PriorityInheritanceProtocol {
-    + task_priorities: original_priority_array
-    + inherited_priorities: current_priority_array
-    + resource_holders: holder_tracking
-    + waiting_tasks: waiter_queue
-    --
-    + inherit_priority(holder, requester): priority_elevation
-    + restore_priority(holder): priority_restoration
-    + calculate_blocking_time(): worst_case_blocking
-    + ensure_bounded_inversion(): inversion_control
-  }
-  
-  rectangle "PIP Execution Flow" {
-    component [Task Blocks on Resource] as block_event
-    component [Inherit Higher Priority] as inherit_priority
-    component [Execute with Elevated Priority] as elevated_exec
-    component [Release Resource] as release_resource
-    component [Restore Original Priority] as restore_priority
-    
-    block_event --> inherit_priority : "triggers"
-    inherit_priority --> elevated_exec : "enables"
-    elevated_exec --> release_resource : "leads_to"
-    release_resource --> restore_priority : "completes"
-    
-    note bottom : "Bounded priority inversion\nequal to one critical section"
-  }
-}
+== Priority Inversion Scenario ==
+L -> R : lock(R)
+note over L : L holds resource R
 
-package "Priority Ceiling Protocol" {
-  
-  class PriorityCeilingProtocol {
-    + resource_ceilings: ceiling_assignment
-    + system_ceiling: current_ceiling
-    + task_priorities: priority_levels
-    + ceiling_violations: violation_detector
-    --
-    + calculate_resource_ceiling(resource): ceiling_value
-    + check_ceiling_condition(task, resource): access_permission
-    + update_system_ceiling(): ceiling_adjustment
-    + prevent_deadlock(): deadlock_prevention
-  }
-  
-  rectangle "PCP Resource Access Rules" {
-    component [Check Task Priority vs System Ceiling] as check_ceiling
-    component [Grant Access if Priority Higher] as grant_access
-    component [Block Task if Priority Lower] as block_task
-    component [Update System Ceiling] as update_ceiling
-    
-    check_ceiling --> grant_access : "priority_sufficient"
-    check_ceiling --> block_task : "priority_insufficient"
-    grant_access --> update_ceiling : "after_resource_lock"
-    
-    note bottom : "Prevents deadlock and\nlimits blocking time"
-  }
-}
+H -> R : request(R)
+note over H : H blocks waiting for R
 
-package "Protocol Comparison Analysis" {
-  
-  card "Priority Inheritance Protocol" {
-    usecase "Reactive approach" as pip_reactive
-    usecase "Inherits on blocking" as pip_inherit
-    usecase "Allows chained blocking" as pip_chain
-    usecase "Deadlock possible" as pip_deadlock
-  }
-  
-  card "Priority Ceiling Protocol" {
-    usecase "Proactive approach" as pcp_proactive
-    usecase "Prevents blocking" as pcp_prevent
-    usecase "Single blocking period" as pcp_single
-    usecase "Deadlock impossible" as pcp_no_deadlock
-  }
-  
-  pip_reactive --> pcp_proactive : "contrasts_with"
-  pip_inherit --> pcp_prevent : "different_strategy"
-  pip_chain --> pcp_single : "worse_blocking"
-  pip_deadlock --> pcp_no_deadlock : "inferior_guarantee"
-}
+M -> M : preempts L
+note over M : M executes while H waits
+note over H, L : Unbounded priority inversion
 
-package "Mathematical Analysis Framework" {
-  
-  class BlockingTimeAnalysis {
-    + critical_section_times: execution_bounds
-    + resource_usage_patterns: access_analysis
-    + worst_case_scenarios: scenario_enumeration
-    --
-    + calculate_pip_blocking(): pip_blocking_bound
-    + calculate_pcp_blocking(): pcp_blocking_bound
-    + perform_schedulability_test(): schedulability_result
-    + optimize_resource_assignment(): optimization_recommendation
-  }
-  
-  rectangle "Blocking Time Bounds" {
-    component [PIP: Sum of longer critical sections] as pip_bound
-    component [PCP: Longest critical section] as pcp_bound
-    
-    pip_bound --> pcp_bound : "Generally worse than"
-    
-    note bottom : "PCP provides tighter\nblocking time bounds"
-  }
-}
-
-PriorityInheritanceProtocol --> block_event : "responds_to"
-PriorityCeilingProtocol --> check_ceiling : "implements"
-pip_reactive --> pip_bound : "results_in"
-pcp_proactive --> pcp_bound : "achieves"
-BlockingTimeAnalysis --> pip_bound : "calculates"
+== Priority Inheritance Solution ==
+L -> R : lock(R)
+H -> R : request(R) 
+note over L : L inherits H's priority
+L -> L : execute with high priority
+L -> R : unlock(R)
+H -> R : acquire(R)
+note over L : L returns to original priority
 @enduml
 ```
 
@@ -525,165 +734,266 @@ Deferrable servers preserve unused execution time for future use, enabling bette
 
 Sporadic servers provide excellent aperiodic response time while maintaining the same schedulability properties as equivalent periodic tasks. The server replenishes its execution budget only after consuming it, preventing excessive interference with periodic tasks while enabling prompt aperiodic task service.
 
+### Aperiodic Task Structures
+
+```c
+// Aperiodic task structure
+typedef struct {
+    int task_id;
+    int arrival_time;
+    int execution_time;
+    int remaining_time;
+    int response_time;
+    int completion_time;
+    enum task_state state;
+    struct aperiodic_task *next;
+} aperiodic_task_t;
+
+// Server structure for aperiodic task scheduling
+typedef struct {
+    int server_id;
+    int period;
+    int budget;
+    int remaining_budget;
+    int priority;
+    int next_replenishment_time;
+    aperiodic_task_t *aperiodic_queue;
+    enum server_type type;
+} aperiodic_server_t;
+
+enum server_type {
+    POLLING_SERVER,
+    DEFERRABLE_SERVER,
+    SPORADIC_SERVER
+};
+```
+
+### Polling Server Implementation
+
+```c
+// Polling server scheduler
+typedef struct {
+    aperiodic_server_t *server;
+    rt_task_t **periodic_tasks;
+    int num_periodic_tasks;
+    aperiodic_task_t *aperiodic_queue_head;
+    int current_time;
+} polling_scheduler_t;
+
+// Initialize polling server
+aperiodic_server_t* init_polling_server(int period, int budget, int priority) {
+    aperiodic_server_t *server = malloc(sizeof(aperiodic_server_t));
+    server->server_id = 0;
+    server->period = period;
+    server->budget = budget;
+    server->remaining_budget = budget;
+    server->priority = priority;
+    server->next_replenishment_time = period;
+    server->aperiodic_queue = NULL;
+    server->type = POLLING_SERVER;
+    return server;
+}
+
+// Add aperiodic task to queue
+void add_aperiodic_task(polling_scheduler_t *scheduler, aperiodic_task_t *task) {
+    task->next = NULL;
+    
+    if (scheduler->aperiodic_queue_head == NULL) {
+        scheduler->aperiodic_queue_head = task;
+    } else {
+        // Add to end of queue (FIFO)
+        aperiodic_task_t *current = scheduler->aperiodic_queue_head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = task;
+    }
+}
+
+// Execute polling server
+aperiodic_task_t* execute_polling_server(polling_scheduler_t *scheduler) {
+    aperiodic_server_t *server = scheduler->server;
+    
+    // Check if server period has started
+    if (scheduler->current_time >= server->next_replenishment_time - server->period) {
+        
+        // Replenish budget at period start
+        if (scheduler->current_time >= server->next_replenishment_time) {
+            server->remaining_budget = server->budget;
+            server->next_replenishment_time += server->period;
+        }
+        
+        // Execute aperiodic tasks if budget available
+        if (server->remaining_budget > 0 && scheduler->aperiodic_queue_head != NULL) {
+            aperiodic_task_t *task = scheduler->aperiodic_queue_head;
+            
+            // Execute for one time unit
+            task->remaining_time--;
+            server->remaining_budget--;
+            
+            // Check if task completed
+            if (task->remaining_time == 0) {
+                task->completion_time = scheduler->current_time;
+                task->response_time = task->completion_time - task->arrival_time;
+                task->state = TASK_COMPLETED;
+                
+                // Remove from queue
+                scheduler->aperiodic_queue_head = task->next;
+                return task;
+            }
+        }
+    }
+    
+    return NULL;
+}
+```
+
+### Sporadic Server Implementation
+
+```c
+// Sporadic server replenishment entry
+typedef struct replenish_entry {
+    int time;
+    int amount;
+    struct replenish_entry *next;
+} replenish_entry_t;
+
+// Sporadic server structure
+typedef struct {
+    aperiodic_server_t base_server;
+    replenish_entry_t *replenish_queue;
+    int active_time;
+    bool is_active;
+} sporadic_server_t;
+
+// Initialize sporadic server
+sporadic_server_t* init_sporadic_server(int budget, int priority) {
+    sporadic_server_t *server = malloc(sizeof(sporadic_server_t));
+    server->base_server.budget = budget;
+    server->base_server.remaining_budget = budget;
+    server->base_server.priority = priority;
+    server->base_server.type = SPORADIC_SERVER;
+    server->replenish_queue = NULL;
+    server->active_time = -1;
+    server->is_active = false;
+    return server;
+}
+
+// Add replenishment to queue
+void add_replenishment(sporadic_server_t *server, int time, int amount) {
+    replenish_entry_t *entry = malloc(sizeof(replenish_entry_t));
+    entry->time = time;
+    entry->amount = amount;
+    entry->next = NULL;
+    
+    // Insert in time order
+    if (server->replenish_queue == NULL || 
+        server->replenish_queue->time > time) {
+        entry->next = server->replenish_queue;
+        server->replenish_queue = entry;
+    } else {
+        replenish_entry_t *current = server->replenish_queue;
+        while (current->next != NULL && current->next->time <= time) {
+            current = current->next;
+        }
+        entry->next = current->next;
+        current->next = entry;
+    }
+}
+
+// Execute sporadic server
+aperiodic_task_t* execute_sporadic_server(sporadic_server_t *server, 
+                                         aperiodic_task_t *aperiodic_queue,
+                                         int current_time) {
+    // Process replenishments
+    while (server->replenish_queue != NULL && 
+           server->replenish_queue->time <= current_time) {
+        replenish_entry_t *entry = server->replenish_queue;
+        server->base_server.remaining_budget += entry->amount;
+        server->replenish_queue = entry->next;
+        free(entry);
+    }
+    
+    // Check if aperiodic tasks are ready and budget available
+    if (aperiodic_queue != NULL && server->base_server.remaining_budget > 0) {
+        
+        // Start active period if not already active
+        if (!server->is_active) {
+            server->is_active = true;
+            server->active_time = current_time;
+        }
+        
+        // Execute aperiodic task
+        aperiodic_task_t *task = aperiodic_queue;
+        task->remaining_time--;
+        
+        // Consume budget and schedule replenishment
+        int consumed_budget = 1;
+        server->base_server.remaining_budget -= consumed_budget;
+        
+        // Schedule replenishment for later
+        int replenish_time = server->active_time + server->base_server.period;
+        add_replenishment(server, replenish_time, consumed_budget);
+        
+        // Check if task completed
+        if (task->remaining_time == 0) {
+            task->completion_time = current_time;
+            task->response_time = task->completion_time - task->arrival_time;
+            task->state = TASK_COMPLETED;
+            return task;
+        }
+    } else {
+        // No aperiodic tasks or budget exhausted
+        server->is_active = false;
+    }
+    
+    return NULL;
+}
+
+// Calculate sporadic server interference (same as periodic task)
+double calculate_sporadic_server_interference(sporadic_server_t *server) {
+    return (double)server->base_server.budget / server->base_server.period;
+}
+```
+
 ```plantuml
 @startuml
-!theme plain
-title "Aperiodic and Sporadic Task Scheduling Strategies"
+title "Aperiodic Task Server Comparison"
 
-package "Server-based Scheduling Approaches" {
-  
+package "Server Types" {
   class PollingServer {
-    + server_period: fixed_interval
-    + server_budget: execution_allowance
-    + aperiodic_queue: pending_tasks
-    + budget_consumption: usage_tracker
+    +period: fixed_interval
+    +budget: execution_allowance
+    +replenishment: periodic
     --
-    + execute_server_slot(): server_execution
-    + serve_aperiodic_tasks(): task_service
-    + replenish_budget(): budget_restoration
-    + suspend_when_idle(): idle_handling
+    +execute_in_slots(): void
+    +suspend_when_idle(): void
+    +simple_implementation(): void
   }
   
   class DeferrableServer {
-    + server_period: fixed_interval
-    + server_budget: execution_allowance
-    + budget_preservation: carryover_mechanism
-    + execution_deferral: postponement_logic
+    +period: fixed_interval  
+    +budget: execution_allowance
+    +preservation: budget_carryover
     --
-    + preserve_unused_budget(): budget_carryover
-    + defer_execution(): postponement_action
-    + serve_late_arrivals(): delayed_service
-    + manage_interference(): interference_control
+    +preserve_unused_budget(): void
+    +serve_late_arrivals(): void
+    +increase_interference(): void
   }
   
   class SporadicServer {
-    + server_budget: execution_allowance
-    + replenishment_queue: budget_restoration
-    + active_period: execution_interval
-    + priority_level: server_priority
+    +budget: execution_allowance
+    +replenishment_queue: restoration_times
+    +active_period: execution_tracking
     --
-    + consume_budget(): budget_utilization
-    + schedule_replenishment(): restoration_timing
-    + maintain_server_priority(): priority_preservation
-    + ensure_schedulability(): guarantee_maintenance
+    +consume_budget(): void
+    +schedule_replenishment(): void
+    +maintain_schedulability(): void
   }
 }
 
-package "Server Execution Patterns" {
-  
-  rectangle "Polling Server Timeline" {
-    participant "Polling Server" as ps
-    participant "Aperiodic Tasks" as at_ps
-    participant "Periodic Tasks" as pt_ps
-    
-    == Server Period Begins ==
-    ps -> at_ps : "Execute if tasks pending"
-    note over at_ps : "Budget consumed\nregardless of usage"
-    
-    ps -> ps : "Suspend remainder of period"
-    pt_ps -> pt_ps : "Normal execution"
-    
-    note over ps : "Simple but may waste\nallocated time slots"
-  }
-  
-  rectangle "Deferrable Server Timeline" {
-    participant "Deferrable Server" as ds
-    participant "Aperiodic Tasks" as at_ds
-    participant "Periodic Tasks" as pt_ds
-    
-    == Server Period Begins ==
-    ds -> ds : "No aperiodic tasks pending"
-    ds -> ds : "Preserve budget for later"
-    
-    == Aperiodic Task Arrives ==
-    ds -> at_ds : "Execute using preserved budget"
-    note over at_ds : "Better response time\nbut increased interference"
-    
-    pt_ds -> pt_ds : "May experience additional delay"
-  }
-  
-  rectangle "Sporadic Server Timeline" {
-    participant "Sporadic Server" as ss
-    participant "Aperiodic Tasks" as at_ss
-    participant "Periodic Tasks" as pt_ss
-    
-    == Aperiodic Task Arrives ==
-    ss -> at_ss : "Execute immediately if budget available"
-    ss -> ss : "Schedule budget replenishment"
-    
-    note over ss : "Replenishment occurs\nafter budget consumption"
-    
-    pt_ss -> pt_ss : "Schedulability preserved"
-    note over pt_ss : "Same interference as\nequivalent periodic task"
-  }
-}
-
-package "Schedulability Analysis Integration" {
-  
-  class AperiodicSchedulabilityAnalysis {
-    + periodic_task_set: periodic_tasks
-    + server_parameters: server_configuration
-    + interference_calculation: interference_analysis
-    + response_time_analysis: timing_verification
-    --
-    + analyze_server_interference(): interference_impact
-    + calculate_response_times(): timing_bounds
-    + verify_deadline_compliance(): schedulability_check
-    + optimize_server_parameters(): parameter_tuning
-  }
-  
-  rectangle "Server Parameter Optimization" {
-    component [Server Period Selection] as period_select
-    component [Budget Allocation] as budget_alloc
-    component [Priority Assignment] as priority_assign
-    component [Schedulability Verification] as sched_verify
-    
-    period_select --> budget_alloc : "constrains"
-    budget_alloc --> priority_assign : "influences"
-    priority_assign --> sched_verify : "requires"
-    
-    note bottom : "Balanced approach for\naperiodic responsiveness"
-  }
-}
-
-package "Performance Comparison" {
-  
-  card "Response Time Characteristics" {
-    usecase "Background: Poor response" as bg_response
-    usecase "Polling: Periodic response" as poll_response
-    usecase "Deferrable: Good response" as def_response
-    usecase "Sporadic: Excellent response" as spor_response
-  }
-  
-  card "Implementation Complexity" {
-    usecase "Background: Simple" as bg_simple
-    usecase "Polling: Moderate" as poll_moderate
-    usecase "Deferrable: Complex" as def_complex
-    usecase "Sporadic: Most complex" as spor_complex
-  }
-  
-  card "Schedulability Impact" {
-    usecase "Background: No impact" as bg_impact
-    usecase "Polling: Periodic equivalent" as poll_impact
-    usecase "Deferrable: Increased interference" as def_impact
-    usecase "Sporadic: Periodic equivalent" as spor_impact
-  }
-  
-  bg_response --> poll_response : "improves_to"
-  poll_response --> def_response : "enhanced_by"
-  def_response --> spor_response : "optimized_to"
-  
-  bg_simple --> spor_complex : "complexity_increases"
-  bg_impact --> spor_impact : "trade_offs_with_responsiveness"
-}
-
-PollingServer --> ps : "implements"
-DeferrableServer --> ds : "implements"
-SporadicServer --> ss : "implements"
-
-period_select --> AperiodicSchedulabilityAnalysis : "input_to"
-bg_response --> bg_impact : "correlates_with"
-spor_response --> spor_complex : "achieved_through"
+PollingServer --|> DeferrableServer : "improved_by"
+DeferrableServer --|> SporadicServer : "optimized_by"
 @enduml
 ```
 
@@ -691,10 +1001,213 @@ spor_response --> spor_complex : "achieved_through"
 
 Contemporary real-time systems face new challenges from multicore processors, mixed-criticality applications, and energy-constrained environments. These challenges drive the development of advanced real-time scheduling techniques that extend traditional approaches.
 
-Multicore real-time scheduling addresses the complexity of scheduling real-time tasks across multiple processing cores while maintaining timing guarantees. Global scheduling approaches use a single ready queue for all cores, while partitioned scheduling assigns tasks to specific cores using uniprocessor algorithms.
+### Multicore Real-time Scheduling
 
-Mixed-criticality systems combine tasks with different levels of criticality, from safety-critical functions that must never miss deadlines to less critical features that can tolerate occasional delays. These systems require scheduling algorithms that can gracefully degrade service for lower-criticality tasks when higher-criticality tasks require additional resources.
+```c
+// Multicore real-time task
+typedef struct {
+    rt_task_t base_task;
+    int assigned_core;
+    int migration_cost;
+    bool can_migrate;
+    cpu_set_t affinity_mask;
+} multicore_rt_task_t;
 
-Energy-aware real-time scheduling considers power consumption alongside timing constraints, using techniques such as dynamic voltage and frequency scaling (DVFS) to reduce energy usage while maintaining deadline guarantees. These approaches balance energy efficiency with real-time performance requirements.
+// Global scheduling on multicore
+typedef struct {
+    multicore_rt_task_t **global_task_set;
+    int num_tasks;
+    int num_cores;
+    rt_task_t **core_queues;
+    pthread_mutex_t global_mutex;
+} global_scheduler_t;
 
+// Select task for core under global EDF
+multicore_rt_task_t* global_edf_select(global_scheduler_t *scheduler, int core_id) {
+    pthread_mutex_lock(&scheduler->global_mutex);
+    
+    multicore_rt_task_t *selected = NULL;
+    int earliest_deadline = INT_MAX;
+    
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        multicore_rt_task_t *task = scheduler->global_task_set[i];
+        
+        if (task->base_task.state == TASK_READY &&
+            (task->can_migrate || task->assigned_core == core_id) &&
+            task->base_task.absolute_deadline < earliest_deadline) {
+            selected = task;
+            earliest_deadline = task->base_task.absolute_deadline;
+        }
+    }
+    
+    if (selected != NULL) {
+        selected->assigned_core = core_id;
+    }
+    
+    pthread_mutex_unlock(&scheduler->global_mutex);
+    return selected;
+}
+
+// Partitioned scheduling - assign tasks to cores
+int partition_tasks_to_cores(global_scheduler_t *scheduler) {
+    // First-Fit Decreasing algorithm
+    double core_utilizations[scheduler->num_cores];
+    memset(core_utilizations, 0, sizeof(double) * scheduler->num_cores);
+    
+    // Sort tasks by utilization (decreasing)
+    for (int i = 0; i < scheduler->num_tasks - 1; i++) {
+        for (int j = i + 1; j < scheduler->num_tasks; j++) {
+            double util_i = calculate_utilization(&scheduler->global_task_set[i]->base_task);
+            double util_j = calculate_utilization(&scheduler->global_task_set[j]->base_task);
+            if (util_i < util_j) {
+                multicore_rt_task_t *temp = scheduler->global_task_set[i];
+                scheduler->global_task_set[i] = scheduler->global_task_set[j];
+                scheduler->global_task_set[j] = temp;
+            }
+        }
+    }
+    
+    // Assign tasks to cores
+    for (int i = 0; i < scheduler->num_tasks; i++) {
+        multicore_rt_task_t *task = scheduler->global_task_set[i];
+        double task_util = calculate_utilization(&task->base_task);
+        
+        // Find first core that can accommodate the task
+        bool assigned = false;
+        for (int core = 0; core < scheduler->num_cores; core++) {
+            if (core_utilizations[core] + task_util <= 0.69) { // RMS bound
+                task->assigned_core = core;
+                core_utilizations[core] += task_util;
+                task->can_migrate = false;
+                assigned = true;
+                break;
+            }
+        }
+        
+        if (!assigned) {
+            return -1; // Partitioning failed
+        }
+    }
+    
+    return 0; // Success
+}
+```
+
+### Mixed-Criticality System
+
+```c
+// Mixed-criticality task
+typedef struct {
+    rt_task_t base_task;
+    enum criticality_level criticality;
+    int execution_times[MAX_CRITICALITY_LEVELS];
+    bool is_active_in_mode[MAX_CRITICALITY_LEVELS];
+} mixed_criticality_task_t;
+
+enum criticality_level {
+    LOW_CRITICALITY = 0,
+    HIGH_CRITICALITY = 1,
+    MAX_CRITICALITY_LEVELS = 2
+};
+
+// Mixed-criticality scheduler
+typedef struct {
+    mixed_criticality_task_t **task_set;
+    int num_tasks;
+    enum criticality_level current_mode;
+    int mode_change_time;
+} mixed_criticality_scheduler_t;
+
+// Mode change protocol
+void trigger_mode_change(mixed_criticality_scheduler_t *scheduler, 
+                        enum criticality_level new_mode, int current_time) {
+    if (new_mode > scheduler->current_mode) {
+        scheduler->current_mode = new_mode;
+        scheduler->mode_change_time = current_time;
+        
+        // Abort low-criticality tasks
+        for (int i = 0; i < scheduler->num_tasks; i++) {
+            mixed_criticality_task_t *task = scheduler->task_set[i];
+            
+            if (task->criticality < new_mode) {
+                task->base_task.state = TASK_COMPLETED; // Abort
+            } else {
+                // Update execution time for high-criticality mode
+                task->base_task.execution_time = 
+                    task->execution_times[new_mode];
+                task->base_task.remaining_time = 
+                    task->base_task.execution_time;
+            }
+        }
+    }
+}
+
+// Check for budget overrun and mode change
+bool check_budget_overrun(mixed_criticality_scheduler_t *scheduler, 
+                         mixed_criticality_task_t *task, int current_time) {
+    int low_crit_execution = task->execution_times[LOW_CRITICALITY];
+    int executed_time = task->base_task.execution_time - task->base_task.remaining_time;
+    
+    if (executed_time > low_crit_execution && 
+        scheduler->current_mode == LOW_CRITICALITY) {
+        trigger_mode_change(scheduler, HIGH_CRITICALITY, current_time);
+        return true;
+    }
+    
+    return false;
+}
+```
+
+```plantuml
+@startuml
+title "Modern Real-time Scheduling Challenges"
+
+package "Multicore Scheduling" {
+  class GlobalScheduling {
+    +shared_ready_queue: task_queue
+    +migration_overhead: cost
+    +load_balancing: automatic
+    --
+    +schedule_across_cores(): void
+    +handle_migrations(): void
+    +global_priority_ordering(): void
+  }
+  
+  class PartitionedScheduling {
+    +core_assignment: static
+    +no_migration: constraint
+    +independent_scheduling: per_core
+    --
+    +partition_tasks(): assignment
+    +schedule_per_core(): void
+    +bin_packing_assignment(): void
+  }
+}
+
+package "Mixed Criticality" {
+  class LowCriticalityMode {
+    +all_tasks_active: boolean
+    +normal_execution_times: wcet_low
+    +degraded_service: acceptable
+    --
+    +execute_all_tasks(): void
+    +monitor_budget_overruns(): void
+  }
+  
+  class HighCriticalityMode {
+    +critical_tasks_only: boolean
+    +extended_execution_times: wcet_high
+    +abort_low_criticality: immediate
+    --
+    +abort_non_critical(): void
+    +guarantee_critical_tasks(): void
+  }
+}
+
+GlobalScheduling --|> PartitionedScheduling : "alternative_to"
+LowCriticalityMode --|> HighCriticalityMode : "transitions_to"
+@enduml
+```
+
+The evolution of real-time scheduling continues as systems become more complex and diverse. Understanding fundamental real-time scheduling principles provides the foundation for addressing these emerging challenges and developing next-generation real-time systems that meet the demanding requirements of modern applications. 
 The evolution of real-time scheduling continues as systems become more complex and diverse. Understanding fundamental real-time scheduling principles provides the foundation for addressing these emerging challenges and developing next-generation real-time systems that meet the demanding requirements of modern applications. 

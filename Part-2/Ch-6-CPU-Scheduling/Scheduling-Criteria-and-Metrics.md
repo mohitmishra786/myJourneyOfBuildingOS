@@ -12,82 +12,83 @@ Throughput quantifies the number of processes completed per unit time, providing
 
 ```plantuml
 @startuml
-!theme plain
-title "CPU Scheduling Performance Metrics Framework"
+title "CPU Scheduling Performance Metrics"
 
-package "System Performance Measurement" {
-  
-  class PerformanceMetrics {
-    + cpu_utilization: percentage
-    + throughput: processes_per_second
-    + turnaround_time: time_measurement
-    + waiting_time: time_measurement
-    + response_time: time_measurement
-    + fairness_index: numerical_value
+class PerformanceMetrics {
+    +cpu_utilization: double
+    +throughput: double
+    +avg_turnaround_time: double
+    +avg_waiting_time: double
+    +avg_response_time: double
     --
-    + calculate_utilization(busy_time, total_time): percentage
-    + measure_throughput(completed_processes, time_period): rate
-    + compute_average_turnaround(): time_value
-    + analyze_waiting_patterns(): statistics
-    + evaluate_responsiveness(): metrics
-  }
-  
-  class WorkloadCharacteristics {
-    + process_arrival_pattern: distribution
-    + burst_time_distribution: statistical_model
-    + priority_levels: priority_range
-    + resource_requirements: resource_profile
-    --
-    + generate_synthetic_workload(): process_set
-    + analyze_real_workload(): workload_profile
-    + predict_performance(algorithm): expected_metrics
-  }
-  
-  class MeasurementInfrastructure {
-    + timing_mechanisms: timer_infrastructure
-    + event_logging: log_system
-    + statistical_analysis: analysis_engine
-    --
-    + start_measurement_session(): session_handle
-    + record_scheduling_event(event): void
-    + calculate_statistical_summary(): summary_report
-    + generate_performance_report(): detailed_report
-  }
+    +calculate_utilization(): double
+    +measure_throughput(): double
+    +compute_averages(): void
 }
 
-package "Metric Categories" {
-  
-  rectangle "Efficiency Metrics" {
-    component [CPU Utilization] as util
-    component [Throughput] as throughput
-    component [Resource Efficiency] as resource_eff
-    
-    note bottom : "System-wide performance\nindicators"
-  }
-  
-  rectangle "Responsiveness Metrics" {
-    component [Turnaround Time] as turnaround
-    component [Waiting Time] as waiting
-    component [Response Time] as response
-    
-    note bottom : "User-perceived\nperformance indicators"
-  }
-  
-  rectangle "Fairness Metrics" {
-    component [Scheduling Fairness] as fairness
-    component [Starvation Prevention] as starvation
-    component [Priority Inversion] as priority_inv
-    
-    note bottom : "Equity and justice\nindicators"
-  }
+class WorkloadAnalyzer {
+    +process_count: int
+    +total_execution_time: int
+    +measurement_period: int
+    --
+    +analyze_workload(): void
+    +generate_report(): void
 }
 
-PerformanceMetrics --> WorkloadCharacteristics : "analyzes"
-MeasurementInfrastructure --> PerformanceMetrics : "collects_data_for"
-util --> throughput : "correlates_with"
-turnaround --> waiting : "includes"
-response --> fairness : "influences"
+class MetricCalculator {
+    +start_time: int
+    +end_time: int
+    +context_switches: int
+    --
+    +record_event(): void
+    +calculate_metrics(): PerformanceMetrics
+}
+
+PerformanceMetrics -- WorkloadAnalyzer
+PerformanceMetrics -- MetricCalculator
 @enduml
+```
+
+### Implementation of Performance Metrics
+
+Our source code implementation demonstrates how these metrics are calculated in practice:
+
+```c
+// Performance metrics structure from scheduling_algorithms_demo.c
+typedef struct {
+    double avg_waiting_time;
+    double avg_turnaround_time;
+    double avg_response_time;
+    double cpu_utilization;
+    double throughput;
+    int total_context_switches;
+} performance_metrics_t;
+
+// Calculate performance metrics for a completed scheduling run
+void calculate_performance_metrics(scheduler_context_t *ctx, performance_metrics_t *metrics) {
+    memset(metrics, 0, sizeof(performance_metrics_t));
+    
+    int total_waiting = 0, total_turnaround = 0, total_response = 0;
+    int total_burst_time = 0;
+    
+    for (int i = 0; i < ctx->process_count; i++) {
+        total_waiting += ctx->processes[i].waiting_time;
+        total_turnaround += ctx->processes[i].turnaround_time;
+        total_response += ctx->processes[i].response_time;
+        total_burst_time += ctx->processes[i].burst_time;
+    }
+    
+    // Calculate average metrics
+    metrics->avg_waiting_time = (double)total_waiting / ctx->process_count;
+    metrics->avg_turnaround_time = (double)total_turnaround / ctx->process_count;
+    metrics->avg_response_time = (double)total_response / ctx->process_count;
+    
+    // CPU utilization = (total execution time) / (total elapsed time)
+    metrics->cpu_utilization = (double)total_burst_time / ctx->current_time * 100.0;
+    
+    // Throughput = processes completed per time unit
+    metrics->throughput = (double)ctx->process_count / ctx->current_time;
+}
 ```
 
 ## Temporal Performance Characteristics
@@ -102,345 +103,453 @@ Response time captures the interval between process arrival and the first CPU al
 
 ```plantuml
 @startuml
-!theme plain
-title "Process Timeline and Temporal Metrics Analysis"
+title "Process Timeline Analysis"
 
-participant "Process Arrival" as arrival
-participant "Ready Queue" as ready
-participant "CPU Execution" as cpu
-participant "I/O Operations" as io
-participant "Process Completion" as completion
+participant Process as P
+participant ReadyQueue as RQ  
+participant CPU as C
+participant IODevice as IO
 
-== Process Lifecycle Timeline ==
+P -> RQ : arrives at t0
+note over RQ : Response time starts
 
-arrival -> ready : "t0: Process arrives"
-note over ready : "Response Time starts"
+RQ -> C : scheduled at t1
+note over C : Response time = t1 - t0
 
-ready -> cpu : "t1: First CPU allocation"
-note over cpu : "Response Time = t1 - t0"
+C -> IO : I/O request at t2
+note over IO : Execute I/O operation
 
-cpu -> io : "t2: I/O request"
-note over io : "Execution time = t2 - t1"
+IO -> RQ : I/O complete at t3
+note over RQ : Additional waiting
 
-io -> ready : "t3: I/O completion"
-note over ready : "I/O blocking time = t3 - t2"
-
-ready -> cpu : "t4: CPU reallocation"
-note over cpu : "Additional waiting = t4 - t3"
-
-cpu -> completion : "t5: Process completion"
-
-note over completion : "Turnaround Time = t5 - t0\nTotal Waiting Time = (t1-t0) + (t4-t3)\nTotal Execution Time = (t2-t1) + (t5-t4)"
-
-== Metric Relationships ==
-
-rectangle "Turnaround Time Decomposition" {
-  component [Waiting Time] as wait_time
-  component [Execution Time] as exec_time  
-  component [I/O Blocking Time] as io_time
-  
-  wait_time --> exec_time : "plus"
-  exec_time --> io_time : "plus"
-  
-  note bottom : "Turnaround = Waiting + Execution + I/O"
-}
+RQ -> C : rescheduled at t4
+C -> P : completes at t5
+note over P : Turnaround time = t5 - t0\nWaiting time = (t1-t0) + (t4-t3)
 @enduml
 ```
 
-## Efficiency and Resource Utilization
+### Process Structure and Timing Implementation
 
-Efficiency metrics evaluate how effectively the system uses available computational resources, balancing the competing demands of multiple processes while minimizing waste.
+Here's how our implementation tracks temporal metrics for each process:
 
-CPU utilization provides the most fundamental efficiency measure, calculated as the percentage of time the CPU performs useful work. However, high utilization must be balanced against other performance objectives, as excessive CPU loading can increase response times and reduce system stability.
+```c
+// Process structure with timing information
+typedef struct {
+    int pid;
+    char name[MAX_NAME_LENGTH];
+    int arrival_time;
+    int burst_time;
+    int priority;
+    int start_time;
+    int completion_time;
+    int waiting_time;
+    int turnaround_time;
+    int response_time;
+    int remaining_time;
+    process_state_t state;
+    bool first_execution;
+} process_t;
 
-Memory utilization patterns interact closely with CPU scheduling decisions, particularly in systems supporting virtual memory. Poor scheduling choices can lead to excessive page faults and thrashing, dramatically reducing effective CPU utilization despite high measured processor activity.
+// Calculate timing metrics for a process
+void calculate_process_metrics(process_t *process, int current_time) {
+    if (process->state == PROCESS_TERMINATED) {
+        process->turnaround_time = process->completion_time - process->arrival_time;
+        process->waiting_time = process->turnaround_time - process->burst_time;
+        
+        if (process->first_execution) {
+            process->response_time = process->start_time - process->arrival_time;
+        }
+    }
+}
 
-System throughput represents the overall rate of work completion, typically measured in processes or transactions per unit time. Maximizing throughput often conflicts with minimizing response time, requiring careful balance based on system objectives and workload characteristics.
+// Analyze waiting time patterns across different algorithms
+void analyze_waiting_patterns(scheduler_context_t *ctx, const char *algorithm_name) {
+    printf("\n=== Waiting Time Analysis for %s ===\n", algorithm_name);
+    
+    int min_waiting = INT_MAX, max_waiting = 0;
+    double total_waiting = 0;
+    
+    for (int i = 0; i < ctx->process_count; i++) {
+        int waiting = ctx->processes[i].waiting_time;
+        total_waiting += waiting;
+        
+        if (waiting < min_waiting) min_waiting = waiting;
+        if (waiting > max_waiting) max_waiting = waiting;
+        
+        printf("Process %s: Waiting = %d, Turnaround = %d, Response = %d\n",
+               ctx->processes[i].name,
+               ctx->processes[i].waiting_time,
+               ctx->processes[i].turnaround_time,
+               ctx->processes[i].response_time);
+    }
+    
+    printf("Average waiting time: %.2f\n", total_waiting / ctx->process_count);
+    printf("Min waiting time: %d\n", min_waiting);
+    printf("Max waiting time: %d\n", max_waiting);
+    printf("Waiting time variance: %.2f\n", 
+           calculate_variance(ctx->processes, ctx->process_count));
+}
+```
+
+## Fairness and Resource Allocation Metrics
+
+Fairness represents a critical but often overlooked aspect of scheduling performance. While efficiency metrics focus on system-wide performance, fairness metrics evaluate how equitably the scheduler distributes CPU time among competing processes.
+
+Scheduling fairness can be measured through various approaches, including variance in waiting times, maximum waiting time bounds, and proportional share allocation. A perfectly fair scheduler would provide each process with an equal share of CPU time, adjusted for process priorities and system policies.
 
 ```plantuml
 @startuml
-!theme plain
-title "Resource Utilization and System Efficiency Analysis"
+title "Fairness Metrics Visualization"
 
-package "Resource Monitoring Framework" {
-  
-  class CPUUtilizationMonitor {
-    + user_time: time_accumulator
-    + system_time: time_accumulator
-    + idle_time: time_accumulator
-    + iowait_time: time_accumulator
+class FairnessAnalyzer {
+    +waiting_times[]: int
+    +service_times[]: int
+    +priority_levels[]: int
     --
-    + calculate_utilization(): percentage
-    + analyze_utilization_pattern(): usage_profile
-    + detect_utilization_anomalies(): alert_list
-  }
-  
-  class ThroughputAnalyzer {
-    + completed_processes: counter
-    + completion_timestamps: timestamp_array
-    + measurement_interval: time_period
-    --
-    + calculate_instantaneous_throughput(): rate
-    + compute_average_throughput(): rate
-    + identify_throughput_trends(): trend_analysis
-  }
-  
-  class EfficiencyCalculator {
-    + useful_work_time: time_measurement
-    + overhead_time: time_measurement
-    + context_switch_cost: time_measurement
-    --
-    + compute_scheduling_efficiency(): efficiency_ratio
-    + analyze_overhead_impact(): overhead_analysis
-    + optimize_efficiency_parameters(): parameter_set
-  }
+    +calculate_variance(): double
+    +measure_max_waiting(): int
+    +analyze_proportional_share(): double
+    +detect_starvation(): boolean
 }
 
-package "Utilization Patterns" {
-  
-  rectangle "CPU Usage Categories" {
-    usecase "User Mode Execution" as user_mode
-    usecase "Kernel Mode Execution" as kernel_mode
-    usecase "I/O Wait Time" as io_wait
-    usecase "Idle Time" as idle_time
-  }
-  
-  rectangle "Efficiency Indicators" {
-    usecase "Context Switch Overhead" as context_overhead
-    usecase "Scheduling Algorithm Cost" as sched_cost
-    usecase "Memory Management Overhead" as mem_overhead
-    usecase "Interrupt Handling Cost" as interrupt_cost
-  }
-  
-  rectangle "Throughput Factors" {
-    usecase "Process Completion Rate" as completion_rate
-    usecase "Pipeline Efficiency" as pipeline_eff
-    usecase "Resource Contention Impact" as contention
-    usecase "Load Balancing Effectiveness" as load_balance
-  }
+class EquityMeasurement {
+    +jain_fairness_index: double
+    +coefficient_of_variation: double
+    +max_min_ratio: double
+    --
+    +compute_jain_index(): double
+    +calculate_cv(): double
+    +measure_extremes(): double
 }
 
-CPUUtilizationMonitor --> user_mode : "tracks"
-ThroughputAnalyzer --> completion_rate : "measures"
-EfficiencyCalculator --> context_overhead : "accounts_for"
-
-user_mode --> kernel_mode : "transitions_to"
-io_wait --> context_overhead : "contributes_to"
-sched_cost --> pipeline_eff : "affects"
+FairnessAnalyzer --> EquityMeasurement : generates
 @enduml
 ```
 
-## Fairness and Equity Considerations
+### Fairness Measurement Implementation
 
-Fairness metrics assess whether the scheduling system provides equitable treatment to processes with similar characteristics while respecting priority differences and system policies.
+```c
+// Calculate Jain's fairness index for waiting times
+double calculate_jain_fairness_index(process_t *processes, int count) {
+    double sum_squares = 0.0;
+    double sum = 0.0;
+    
+    for (int i = 0; i < count; i++) {
+        double waiting = (double)processes[i].waiting_time;
+        sum += waiting;
+        sum_squares += waiting * waiting;
+    }
+    
+    if (sum_squares == 0.0) return 1.0; // Perfect fairness when all waiting times are 0
+    
+    return (sum * sum) / (count * sum_squares);
+}
 
-Scheduling fairness can be measured through various approaches, including analyzing the variance in waiting times for processes with similar burst characteristics, or examining whether higher-priority processes receive proportionally better service.
+// Detect potential starvation scenarios
+bool detect_starvation(process_t *processes, int count, int threshold) {
+    for (int i = 0; i < count; i++) {
+        if (processes[i].waiting_time > threshold) {
+            printf("WARNING: Process %s may be experiencing starvation (waiting: %d)\n",
+                   processes[i].name, processes[i].waiting_time);
+            return true;
+        }
+    }
+    return false;
+}
 
-Starvation prevention mechanisms ensure that no process waits indefinitely for CPU access, regardless of system load or the presence of higher-priority processes. Measuring starvation requires tracking maximum waiting times and identifying processes that exceed acceptable delay thresholds.
+// Calculate coefficient of variation for waiting times
+double calculate_coefficient_of_variation(process_t *processes, int count) {
+    double mean = 0.0;
+    double variance = 0.0;
+    
+    // Calculate mean
+    for (int i = 0; i < count; i++) {
+        mean += processes[i].waiting_time;
+    }
+    mean /= count;
+    
+    // Calculate variance
+    for (int i = 0; i < count; i++) {
+        double diff = processes[i].waiting_time - mean;
+        variance += diff * diff;
+    }
+    variance /= count;
+    
+    double std_dev = sqrt(variance);
+    return (mean == 0.0) ? 0.0 : std_dev / mean;
+}
+```
 
-Priority inversion occurs when lower-priority processes prevent higher-priority processes from executing, often due to resource contention or inappropriate scheduling decisions. Detecting and measuring priority inversion helps evaluate the effectiveness of priority inheritance and priority ceiling protocols.
+## System Resource Utilization Analysis
+
+System resource utilization extends beyond simple CPU usage to encompass memory efficiency, I/O subsystem performance, and overall system throughput. Comprehensive utilization analysis provides insight into system bottlenecks and optimization opportunities.
+
+CPU utilization analysis must consider both instantaneous and long-term utilization patterns. High instantaneous utilization may indicate effective resource usage, while sustained high utilization might suggest system overload or poor load balancing.
 
 ```plantuml
 @startuml
-!theme plain
-title "Fairness and Equity Measurement Framework"
+title "Resource Utilization Components"
 
-package "Fairness Assessment" {
-  
-  class FairnessAnalyzer {
-    + process_priorities: priority_array
-    + service_times: time_array
-    + waiting_times: time_array
-    + completion_order: sequence
+class ResourceMonitor {
+    +cpu_usage_history[]: double
+    +memory_utilization: double
+    +io_wait_percentage: double
+    +context_switch_rate: int
     --
-    + calculate_fairness_index(): fairness_measure
-    + detect_starvation_cases(): starvation_list
-    + analyze_priority_inversion(): inversion_events
-    + measure_service_equity(): equity_metrics
-  }
-  
-  class StarvationDetector {
-    + maximum_wait_threshold: time_limit
-    + process_wait_history: wait_records
-    + starvation_alerts: alert_queue
-    --
-    + monitor_waiting_processes(): monitoring_status
-    + identify_starving_processes(): process_list
-    + recommend_mitigation_actions(): action_list
-  }
-  
-  class PriorityAnalyzer {
-    + priority_levels: level_definitions
-    + service_ratios: ratio_measurements
-    + inversion_detector: inversion_monitor
-    --
-    + validate_priority_ordering(): compliance_report
-    + measure_priority_effectiveness(): effectiveness_metrics
-    + optimize_priority_parameters(): parameter_recommendations
-  }
+    +sample_cpu_usage(): double
+    +monitor_memory(): void
+    +track_io_operations(): void
+    +count_context_switches(): int
 }
 
-package "Fairness Metrics" {
-  
-  card "Proportional Fairness" {
-    usecase "Service ratio analysis" as service_ratio
-    usecase "Weighted fair queuing" as wfq
-    usecase "Deficit round robin" as drr
-  }
-  
-  card "Temporal Fairness" {
-    usecase "Max-min fairness" as max_min
-    usecase "Jain's fairness index" as jain_index
-    usecase "Gini coefficient" as gini
-  }
-  
-  card "Priority Preservation" {
-    usecase "Priority inversion detection" as pi_detect
-    usecase "Priority inheritance tracking" as pi_inherit
-    usecase "Priority ceiling analysis" as pc_analysis
-  }
+class UtilizationCalculator {
+    +measurement_window: int
+    +sampling_interval: int
+    +baseline_metrics: ResourceMetrics
+    --
+    +calculate_efficiency(): double
+    +determine_bottlenecks(): BottleneckReport
+    +generate_recommendations(): OptimizationSuggestions
 }
 
-package "Equity Violations" {
-  
-  rectangle "Starvation Scenarios" {
-    component [Low Priority Starvation] as low_priority_starv
-    component [Resource Contention Starvation] as resource_starv
-    component [Convoy Effect] as convoy_effect
-    
-    note bottom : "Process indefinitely\ndelayed execution"
-  }
-  
-  rectangle "Priority Anomalies" {
-    component [Priority Inversion] as priority_inversion
-    component [Priority Inheritance Failure] as pi_failure
-    component [Unbounded Priority Inversion] as unbounded_pi
-    
-    note bottom : "Higher priority processes\nblocked by lower priority"
-  }
-}
-
-FairnessAnalyzer --> service_ratio : "calculates"
-StarvationDetector --> low_priority_starv : "identifies"
-PriorityAnalyzer --> priority_inversion : "monitors"
-
-service_ratio --> max_min : "implements"
-pi_detect --> pi_inherit : "triggers"
-convoy_effect --> unbounded_pi : "can_cause"
+ResourceMonitor --> UtilizationCalculator : provides_data
 @enduml
 ```
 
-## Workload Characterization and Benchmarking
+### Resource Utilization Tracking
 
-Understanding workload characteristics enables meaningful evaluation of scheduling algorithm performance under realistic conditions that reflect actual system usage patterns.
+```c
+// System resource utilization tracking structure
+typedef struct {
+    double cpu_utilization;
+    double memory_utilization;
+    double io_wait_percentage;
+    int context_switches;
+    int interrupt_count;
+    long idle_time;
+    long busy_time;
+} system_utilization_t;
 
-Synthetic workloads provide controlled test environments where specific scheduling behaviors can be isolated and analyzed. These workloads typically feature known arrival patterns, burst time distributions, and resource requirements that enable reproducible performance measurements.
+// Monitor system utilization during scheduling simulation
+void monitor_system_utilization(scheduler_context_t *ctx, system_utilization_t *util) {
+    util->busy_time = 0;
+    util->idle_time = 0;
+    util->context_switches = 0;
+    
+    int last_completion = 0;
+    
+    for (int i = 0; i < ctx->process_count; i++) {
+        process_t *process = &ctx->processes[i];
+        
+        // Track idle time between processes
+        if (process->start_time > last_completion) {
+            util->idle_time += (process->start_time - last_completion);
+        }
+        
+        // Track busy time during process execution
+        util->busy_time += process->burst_time;
+        
+        // Count context switches (simplified)
+        if (i > 0) util->context_switches++;
+        
+        last_completion = process->completion_time;
+    }
+    
+    // Calculate utilization percentage
+    long total_time = util->busy_time + util->idle_time;
+    util->cpu_utilization = (total_time > 0) ? 
+        (double)util->busy_time / total_time * 100.0 : 0.0;
+}
 
-Real-world workload analysis involves capturing and analyzing actual system behavior, including process arrival patterns, execution characteristics, and resource usage profiles. This analysis helps validate whether laboratory results translate to production environments.
+// Generate comprehensive utilization report
+void generate_utilization_report(system_utilization_t *util, const char *algorithm) {
+    printf("\n=== System Utilization Report (%s) ===\n", algorithm);
+    printf("CPU Utilization: %.2f%%\n", util->cpu_utilization);
+    printf("Total Busy Time: %ld time units\n", util->busy_time);
+    printf("Total Idle Time: %ld time units\n", util->idle_time);
+    printf("Context Switches: %d\n", util->context_switches);
+    
+    if (util->cpu_utilization < 70.0) {
+        printf("NOTE: Low CPU utilization suggests potential inefficiency\n");
+    } else if (util->cpu_utilization > 95.0) {
+        printf("NOTE: Very high utilization may impact system responsiveness\n");
+    }
+}
+```
 
-Benchmark suites establish standardized workloads for comparing different scheduling approaches under identical conditions. Well-designed benchmarks include diverse workload types representing various application domains and usage scenarios.
+## Performance Benchmarking and Comparison Framework
+
+Effective scheduling algorithm evaluation requires systematic benchmarking approaches that enable objective comparison across different algorithms and workload scenarios. The benchmarking framework establishes standardized testing methodologies and measurement protocols.
+
+Synthetic workload generation provides controlled testing environments where specific algorithmic behaviors can be isolated and analyzed. These artificial workloads enable precise comparison of algorithm performance under known conditions.
+
+Real workload analysis captures the complexity and unpredictability of actual system usage patterns. While more difficult to control and reproduce, real workload testing provides insights into how algorithms perform under genuine operational conditions.
 
 ```plantuml
 @startuml
-!theme plain
-title "Workload Characterization and Benchmarking Framework"
+title "Performance Benchmarking Framework"
 
-package "Workload Generation and Analysis" {
-  
-  class WorkloadGenerator {
-    + arrival_rate_model: statistical_distribution
-    + burst_time_model: distribution_parameters
-    + priority_distribution: priority_model
-    + resource_requirements: resource_profile
+class BenchmarkSuite {
+    +test_scenarios[]: TestScenario
+    +workload_generators[]: WorkloadGenerator
+    +result_analyzers[]: ResultAnalyzer
     --
-    + generate_synthetic_workload(parameters): process_stream
-    + create_benchmark_suite(): benchmark_collection
-    + replay_captured_workload(trace): process_sequence
-  }
-  
-  class WorkloadAnalyzer {
-    + process_characteristics: analysis_data
-    + temporal_patterns: pattern_analysis
-    + resource_usage_profiles: usage_statistics
-    --
-    + analyze_arrival_patterns(): arrival_analysis
-    + characterize_burst_times(): burst_statistics
-    + identify_workload_classes(): classification_results
-    + generate_workload_summary(): summary_report
-  }
-  
-  class BenchmarkSuite {
-    + interactive_workload: workload_definition
-    + batch_workload: workload_definition
-    + mixed_workload: workload_definition
-    + stress_test_workload: workload_definition
-    --
-    + execute_benchmark_set(scheduler): results_collection
-    + compare_scheduler_performance(): comparison_report
-    + validate_benchmark_results(): validation_status
-  }
+    +run_benchmark(): BenchmarkResults
+    +compare_algorithms(): ComparisonReport
+    +generate_visualizations(): Charts
 }
 
-package "Workload Categories" {
-  
-  rectangle "Interactive Workloads" {
-    component [User Interface Applications] as ui_apps
-    component [Web Browsing Sessions] as web_sessions
-    component [Development Environments] as dev_env
-    
-    note bottom : "Response time critical\nBursty execution patterns"
-  }
-  
-  rectangle "Batch Workloads" {
-    component [Scientific Computing] as scientific
-    component [Data Processing] as data_proc
-    component [Compilation Tasks] as compilation
-    
-    note bottom : "Throughput critical\nLong-running processes"
-  }
-  
-  rectangle "Real-time Workloads" {
-    component [Multimedia Processing] as multimedia
-    component [Control Systems] as control_sys
-    component [Network Processing] as network_proc
-    
-    note bottom : "Deadline critical\nPredictable timing"
-  }
-  
-  rectangle "Mixed Workloads" {
-    component [Server Applications] as server_apps
-    component [Desktop Computing] as desktop
-    component [Mobile Applications] as mobile_apps
-    
-    note bottom : "Multiple objectives\nDiverse characteristics"
-  }
+class TestScenario {
+    +scenario_name: string
+    +process_count: int
+    +workload_type: WorkloadType
+    +arrival_pattern: ArrivalPattern
+    --
+    +setup_scenario(): void
+    +execute_test(): TestResults
+    +cleanup_scenario(): void
 }
 
-WorkloadGenerator --> ui_apps : "creates"
-WorkloadAnalyzer --> scientific : "studies"
-BenchmarkSuite --> multimedia : "includes"
-
-ui_apps --> web_sessions : "similar_to"
-data_proc --> compilation : "batch_processing"
-control_sys --> network_proc : "timing_constraints"
-server_apps --> desktop : "mixed_requirements"
+BenchmarkSuite *-- TestScenario : contains
 @enduml
 ```
 
-## Performance Trade-offs and Optimization
+### Benchmarking Implementation
 
-Real-world scheduling systems must navigate complex trade-offs between competing performance objectives, as optimizing one metric often degrades others.
+```c
+// Benchmark scenario configuration
+typedef enum {
+    WORKLOAD_CPU_INTENSIVE,
+    WORKLOAD_IO_INTENSIVE,
+    WORKLOAD_MIXED,
+    WORKLOAD_INTERACTIVE,
+    WORKLOAD_BATCH
+} workload_type_t;
 
-The fundamental trade-off between throughput and response time appears in virtually all scheduling scenarios. Algorithms that maximize throughput by running processes to completion minimize context switching overhead but may severely impact response time for interactive applications.
+typedef struct {
+    char scenario_name[64];
+    workload_type_t workload_type;
+    int process_count;
+    int min_burst_time;
+    int max_burst_time;
+    int arrival_time_range;
+    bool use_priorities;
+} benchmark_scenario_t;
 
-Fairness versus efficiency trade-offs emerge when ensuring equitable resource allocation conflicts with maximizing overall system performance. Perfectly fair scheduling may require frequent preemption and context switching, reducing overall efficiency.
+// Run comprehensive benchmark comparing multiple algorithms
+void run_scheduling_benchmark(void) {
+    benchmark_scenario_t scenarios[] = {
+        {"CPU Intensive", WORKLOAD_CPU_INTENSIVE, 10, 5, 20, 5, false},
+        {"IO Intensive", WORKLOAD_IO_INTENSIVE, 15, 1, 8, 10, false},
+        {"Mixed Workload", WORKLOAD_MIXED, 12, 2, 15, 8, false},
+        {"Interactive", WORKLOAD_INTERACTIVE, 20, 1, 5, 2, true},
+        {"Batch Processing", WORKLOAD_BATCH, 8, 10, 30, 0, false}
+    };
+    
+    scheduling_algorithm_t algorithms[] = {
+        ALGORITHM_FCFS,
+        ALGORITHM_SJF,
+        ALGORITHM_SRTF,
+        ALGORITHM_ROUND_ROBIN,
+        ALGORITHM_PRIORITY
+    };
+    
+    printf("=== Comprehensive Scheduling Algorithm Benchmark ===\n\n");
+    
+    for (int s = 0; s < 5; s++) {
+        printf("Scenario: %s\n", scenarios[s].scenario_name);
+        printf("----------------------------------------\n");
+        
+        for (int a = 0; a < 5; a++) {
+            scheduler_context_t ctx;
+            generate_benchmark_workload(&ctx, &scenarios[s]);
+            
+            // Execute the scheduling algorithm
+            switch (algorithms[a]) {
+                case ALGORITHM_FCFS:
+                    schedule_fcfs(&ctx);
+                    break;
+                case ALGORITHM_SJF:
+                    schedule_sjf(&ctx);
+                    break;
+                case ALGORITHM_SRTF:
+                    schedule_srtf(&ctx);
+                    break;
+                case ALGORITHM_ROUND_ROBIN:
+                    ctx.time_quantum = 4;
+                    schedule_round_robin(&ctx);
+                    break;
+                case ALGORITHM_PRIORITY:
+                    schedule_priority(&ctx);
+                    break;
+            }
+            
+            // Calculate and display performance metrics
+            performance_metrics_t metrics;
+            calculate_performance_metrics(&ctx, &metrics);
+            
+            printf("%s: Avg Wait=%.2f, Throughput=%.3f, Utilization=%.1f%%\n",
+                   get_algorithm_name(algorithms[a]),
+                   metrics.avg_waiting_time,
+                   metrics.throughput,
+                   metrics.cpu_utilization);
+        }
+        printf("\n");
+    }
+}
 
-Priority-based scheduling introduces trade-offs between respecting process importance and preventing starvation. Strict priority scheduling maximizes the service quality for high-priority processes but may indefinitely delay lower-priority work.
+// Generate workload based on scenario configuration
+void generate_benchmark_workload(scheduler_context_t *ctx, benchmark_scenario_t *scenario) {
+    initialize_scheduler_context(ctx, ALGORITHM_FCFS, 0);
+    ctx->process_count = scenario->process_count;
+    
+    srand(42); // Fixed seed for reproducible results
+    
+    for (int i = 0; i < scenario->process_count; i++) {
+        process_t *process = &ctx->processes[i];
+        
+        process->pid = i + 1;
+        snprintf(process->name, MAX_NAME_LENGTH, "P%d", i + 1);
+        
+        // Generate arrival times based on scenario
+        if (scenario->arrival_time_range > 0) {
+            process->arrival_time = rand() % scenario->arrival_time_range;
+        } else {
+            process->arrival_time = 0; // Batch scenario - all arrive at once
+        }
+        
+        // Generate burst times based on workload type
+        switch (scenario->workload_type) {
+            case WORKLOAD_CPU_INTENSIVE:
+                process->burst_time = scenario->min_burst_time + 
+                    rand() % (scenario->max_burst_time - scenario->min_burst_time + 1);
+                break;
+            case WORKLOAD_IO_INTENSIVE:
+                // Shorter, more frequent bursts
+                process->burst_time = scenario->min_burst_time + 
+                    rand() % ((scenario->max_burst_time - scenario->min_burst_time) / 2 + 1);
+                break;
+            case WORKLOAD_INTERACTIVE:
+                // Very short bursts for responsiveness
+                process->burst_time = 1 + rand() % 3;
+                break;
+            default:
+                process->burst_time = scenario->min_burst_time + 
+                    rand() % (scenario->max_burst_time - scenario->min_burst_time + 1);
+        }
+        
+        // Set priority if scenario uses priorities
+        if (scenario->use_priorities) {
+            process->priority = 1 + rand() % 5; // Priority levels 1-5
+        } else {
+            process->priority = 1; // Default priority
+        }
+        
+        process->remaining_time = process->burst_time;
+        process->state = PROCESS_NEW;
+        process->first_execution = true;
+    }
+}
+```
 
-Resource contention creates multi-dimensional optimization problems where CPU scheduling decisions interact with memory management, I/O scheduling, and other system components. Optimal CPU scheduling may exacerbate memory pressure or create I/O bottlenecks.
-
-Modern scheduling systems employ adaptive algorithms that dynamically adjust their behavior based on current system conditions and workload characteristics. These algorithms attempt to automatically navigate performance trade-offs by monitoring system metrics and adjusting scheduling parameters in real-time.
-
-The selection of appropriate scheduling criteria and metrics depends heavily on the intended system usage and performance objectives. Interactive systems prioritize response time and fairness, while batch processing systems focus on throughput and efficiency. Real-time systems require predictable behavior and deadline guarantees, often at the expense of overall throughput.
-
-Understanding these trade-offs and measurement challenges provides the foundation for designing scheduling algorithms that meet specific system requirements while maintaining acceptable performance across diverse workload conditions. The metrics and criteria discussed here form the basis for evaluating and comparing different scheduling approaches in subsequent sections. 
+The comprehensive performance measurement framework provides the foundation for evaluating and comparing different scheduling algorithms. By systematically tracking temporal metrics, fairness indicators, and resource utilization patterns, system designers can make informed decisions about scheduling algorithm selection and parameter tuning for specific operational environments. 
