@@ -1,0 +1,1 @@
+thread_synchronization_demo.o: thread_synchronization_demo.c

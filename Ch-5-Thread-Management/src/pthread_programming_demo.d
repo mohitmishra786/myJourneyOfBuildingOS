@@ -1,0 +1,1 @@
+pthread_programming_demo.o: pthread_programming_demo.c

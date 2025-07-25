@@ -144,6 +144,35 @@ const bookConfig = {
                     path: "Ch-4-Process-Management/POSIX-Process-Management-APIs.md"
                 }
             ]
+        },
+        {
+            title: "Thread Management",
+            pages: [
+                {
+                    title: "Thread Models and Implementation",
+                    path: "Ch-5-Thread-Management/Thread-Models-and-Implementation.md"
+                },
+                {
+                    title: "User-level vs Kernel-level Threads",
+                    path: "Ch-5-Thread-Management/User-level-vs-Kernel-level-Threads.md"
+                },
+                {
+                    title: "Thread Scheduling",
+                    path: "Ch-5-Thread-Management/Thread-Scheduling.md"
+                },
+                {
+                    title: "Thread Synchronization",
+                    path: "Ch-5-Thread-Management/Thread-Synchronization.md"
+                },
+                {
+                    title: "Thread Pools",
+                    path: "Ch-5-Thread-Management/Thread-Pools.md"
+                },
+                {
+                    title: "Pthread Programming",
+                    path: "Ch-5-Thread-Management/Pthread-Programming.md"
+                }
+            ]
         }
     ]
 };
