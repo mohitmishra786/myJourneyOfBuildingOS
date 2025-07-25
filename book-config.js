@@ -202,6 +202,35 @@ const bookConfig = {
                     path: "Part-2/Ch-6-CPU-Scheduling/Multiprocessor-Scheduling.md"
                 }
             ]
+        },
+        {
+            title: "Process Synchronization",
+            pages: [
+                {
+                    title: "Race Conditions and Critical Section Problem",
+                    path: "Part-2/Ch-7-Process-Synchronization/Race-Conditions-and-Critical-Section-Problem.md"
+                },
+                {
+                    title: "Peterson's Solution and Hardware Support",
+                    path: "Part-2/Ch-7-Process-Synchronization/Petersons-Solution-and-Hardware-Support.md"
+                },
+                {
+                    title: "Semaphores and Mutex",
+                    path: "Part-2/Ch-7-Process-Synchronization/Semaphores-and-Mutex.md"
+                },
+                {
+                    title: "Monitors and Condition Variables",
+                    path: "Part-2/Ch-7-Process-Synchronization/Monitors-and-Condition-Variables.md"
+                },
+                {
+                    title: "Classical Synchronization Problems",
+                    path: "Part-2/Ch-7-Process-Synchronization/Classical-Synchronization-Problems.md"
+                },
+                {
+                    title: "Dining Philosophers and Deadlock Handling",
+                    path: "Part-2/Ch-7-Process-Synchronization/Dining-Philosophers-and-Deadlock-Handling.md"
+                }
+            ]
         }
     ]
 };
