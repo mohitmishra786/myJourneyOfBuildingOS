@@ -13,7 +13,7 @@ Modern schedulers implement hierarchical approaches where high-level policies de
 ```plantuml
 @startuml
 !theme plain
-title Thread Scheduling System Architecture
+title "Thread Scheduling System Architecture"
 
 package "Scheduling Framework" {
   
@@ -60,19 +60,19 @@ package "Scheduling Framework" {
 }
 
 package "Hardware Interface" {
-  [Timer Hardware] as timer
-  [CPU Cores] as cores
-  [Interrupt Controller] as ic
+  component [Timer Hardware] as timer
+  component [CPU Cores] as cores
+  component [Interrupt Controller] as ic
 }
 
 SchedulerCore --> ReadyQueueManager
 SchedulerCore --> TimeManager
 SchedulerCore --> LoadBalancer
 
-TimeManager --> timer : configure_preemption
-SchedulerCore --> cores : dispatch_thread
-LoadBalancer --> cores : assign_cpu_affinity
-TimeManager --> ic : timer_interrupt_handler
+TimeManager --> timer : "configure_preemption"
+SchedulerCore --> cores : "dispatch_thread"
+LoadBalancer --> cores : "assign_cpu_affinity"
+TimeManager --> ic : "timer_interrupt_handler"
 @enduml
 ```
 
@@ -87,34 +87,34 @@ Dynamic priority systems adjust thread priorities based on runtime behavior and 
 ```plantuml
 @startuml
 !theme plain
-title Priority-based Scheduling Algorithm Flow
+title "Priority-based Scheduling Algorithm Flow"
 
 start
-:Timer interrupt occurs;
-:Save current thread context;
+:"Timer interrupt occurs";
+:"Save current thread context";
 
-if (Current thread time slice expired?) then (yes)
-  :Reduce thread priority;
-  :Move to appropriate queue;
+if ("Current thread time slice expired?") then (yes)
+  :"Reduce thread priority";
+  :"Move to appropriate queue";
 else (no)
-  if (Higher priority thread ready?) then (yes)
-    :Preempt current thread;
-    :Keep current priority;
+  if ("Higher priority thread ready?") then (yes)
+    :"Preempt current thread";
+    :"Keep current priority";
   else (no)
-    :Continue current thread;
+    :"Continue current thread";
     stop
   endif
 endif
 
-:Search priority queues from highest to lowest;
-:Find highest priority ready thread;
+:"Search priority queues from highest to lowest";
+:"Find highest priority ready thread";
 
-if (Ready thread found?) then (yes)
-  :Load thread context;
-  :Start new time slice;
-  :Dispatch thread;
+if ("Ready thread found?") then (yes)
+  :"Load thread context";
+  :"Start new time slice";
+  :"Dispatch thread";
 else (no)
-  :Run idle task;
+  :"Run idle task";
 endif
 
 stop
@@ -138,36 +138,36 @@ Time slice selection significantly affects system behavior. Short time slices im
 ```plantuml
 @startuml
 !theme plain
-title Round Robin Scheduling with Multiple Queues
+title "Round Robin Scheduling with Multiple Queues"
 
 package "Multi-level Round Robin Scheduler" {
   
   rectangle "Interactive Queue" {
-    [Thread A] --> [Thread B]
-    [Thread B] --> [Thread C]
-    [Thread C] --> [Thread A]
-    note bottom : Short time slice\nHigh responsiveness
+    component [Thread A] --> component [Thread B]
+    component [Thread B] --> component [Thread C]
+    component [Thread C] --> component [Thread A]
+    note bottom : "Short time slice\nHigh responsiveness"
   }
   
   rectangle "Background Queue" {
-    [Thread D] --> [Thread E]
-    [Thread E] --> [Thread F]
-    [Thread F] --> [Thread D]
-    note bottom : Long time slice\nBatch processing
+    component [Thread D] --> component [Thread E]
+    component [Thread E] --> component [Thread F]
+    component [Thread F] --> component [Thread D]
+    note bottom : "Long time slice\nBatch processing"
   }
   
   rectangle "System Queue" {
-    [System Thread 1] --> [System Thread 2]
-    [System Thread 2] --> [System Thread 1]
-    note bottom : Highest priority\nKernel tasks
+    component [System Thread 1] --> component [System Thread 2]
+    component [System Thread 2] --> component [System Thread 1]
+    note bottom : "Highest priority\nKernel tasks"
   }
 }
 
-[Scheduler] --> [System Queue] : Check first
-[Scheduler] --> [Interactive Queue] : Then check
-[Scheduler] --> [Background Queue] : Finally check
+component [Scheduler] --> component [System Queue] : "Check first"
+component [Scheduler] --> component [Interactive Queue] : "Then check"
+component [Scheduler] --> component [Background Queue] : "Finally check"
 
-note right of Scheduler : Preemptive scheduling\nwith priority levels
+note right of Scheduler : "Preemptive scheduling\nwith priority levels"
 @enduml
 ```
 
@@ -188,7 +188,7 @@ Red-black trees efficiently maintain threads ordered by virtual runtime, enablin
 ```plantuml
 @startuml
 !theme plain
-title Completely Fair Scheduler Red-Black Tree Structure
+title "Completely Fair Scheduler Red-Black Tree Structure"
 
 package "CFS Scheduling Tree" {
   
@@ -228,12 +228,12 @@ package "CFS Scheduling Tree" {
   }
 }
 
-SchedulingEntity --> RBTreeNode : contained_in
-RBTreeNode --> CFSRunQueue : part_of_tree
-CFSRunQueue --> SchedulingEntity : manages
+SchedulingEntity --> RBTreeNode : "contained_in"
+RBTreeNode --> CFSRunQueue : "part_of_tree"
+CFSRunQueue --> SchedulingEntity : "manages"
 
-note bottom of RBTreeNode : Ordered by virtual runtime\nLeftmost = next to run
-note bottom of CFSRunQueue : O(log n) operations\nO(1) next task selection
+note bottom of RBTreeNode : "Ordered by virtual runtime\nLeftmost = next to run"
+note bottom of CFSRunQueue : "O(log n) operations\nO(1) next task selection"
 @enduml
 ```
 
@@ -254,46 +254,46 @@ Soft real-time systems allow occasional deadline misses but attempt to minimize 
 ```plantuml
 @startuml
 !theme plain
-title Real-time Scheduling Algorithm Comparison
+title "Real-time Scheduling Algorithm Comparison"
 
 package "Rate Monotonic Scheduling" {
-  [Task 1: Period 10ms] as t1
-  [Task 2: Period 20ms] as t2
-  [Task 3: Period 50ms] as t3
+  component [Task 1: Period 10ms] as t1
+  component [Task 2: Period 20ms] as t2
+  component [Task 3: Period 50ms] as t3
   
-  note bottom : Static priority assignment\nShorter period = Higher priority
+  note bottom : "Static priority assignment\nShorter period = Higher priority"
 }
 
 package "Earliest Deadline First" {
-  [Task A: Deadline 15ms] as ta
-  [Task B: Deadline 25ms] as tb
-  [Task C: Deadline 40ms] as tc
+  component [Task A: Deadline 15ms] as ta
+  component [Task B: Deadline 25ms] as tb
+  component [Task C: Deadline 40ms] as tc
   
-  note bottom : Dynamic priority assignment\nEarlier deadline = Higher priority
+  note bottom : "Dynamic priority assignment\nEarlier deadline = Higher priority"
 }
 
 package "Scheduling Timeline" {
   rectangle "Time 0-10ms" {
-    [Execute Task 1] as e1
+    component [Execute Task 1] as e1
   }
   
   rectangle "Time 10-20ms" {
-    [Execute Task 2] as e2
+    component [Execute Task 2] as e2
   }
   
   rectangle "Time 20-30ms" {
-    [Execute Task 1] as e3
+    component [Execute Task 1] as e3
   }
   
   rectangle "Time 30-40ms" {
-    [Execute Task 3] as e4
+    component [Execute Task 3] as e4
   }
 }
 
-t1 --> e1 : Highest priority
-t2 --> e2 : Medium priority
-t1 --> e3 : Period restart
-t3 --> e4 : Lowest priority
+t1 --> e1 : "Highest priority"
+t2 --> e2 : "Medium priority"
+t1 --> e3 : "Period restart"
+t3 --> e4 : "Lowest priority"
 @enduml
 ```
 
@@ -314,49 +314,49 @@ Cache affinity represents a critical consideration in multicore scheduling. When
 ```plantuml
 @startuml
 !theme plain
-title Multicore Scheduling Load Balancing Strategy
+title "Multicore Scheduling Load Balancing Strategy"
 
 package "CPU Core 0" {
-  [Ready Queue 0] as rq0
-  [Running Thread] as rt0
-  [CPU Cache 0] as cache0
+  component [Ready Queue 0] as rq0
+  component [Running Thread] as rt0
+  component [CPU Cache 0] as cache0
   
-  note bottom of cache0 : Thread affinity\noptimizes cache usage
+  note bottom of cache0 : "Thread affinity\noptimizes cache usage"
 }
 
 package "CPU Core 1" {
-  [Ready Queue 1] as rq1
-  [Running Thread] as rt1
-  [CPU Cache 1] as cache1
+  component [Ready Queue 1] as rq1
+  component [Running Thread] as rt1
+  component [CPU Cache 1] as cache1
 }
 
 package "CPU Core 2" {
-  [Ready Queue 2] as rq2
-  [Running Thread] as rt2
-  [CPU Cache 2] as cache2
+  component [Ready Queue 2] as rq2
+  component [Running Thread] as rt2
+  component [CPU Cache 2] as cache2
 }
 
 package "CPU Core 3" {
-  [Ready Queue 3] as rq3
-  [Idle] as idle
-  [CPU Cache 3] as cache3
+  component [Ready Queue 3] as rq3
+  component [Idle] as idle
+  component [CPU Cache 3] as cache3
 }
 
 package "Load Balancer" {
-  [Global Load Monitor] as monitor
-  [Migration Decision Engine] as migrate
-  [Work Stealing Logic] as steal
+  component [Global Load Monitor] as monitor
+  component [Migration Decision Engine] as migrate
+  component [Work Stealing Logic] as steal
 }
 
-monitor --> rq0 : monitor_load
-monitor --> rq1 : monitor_load
-monitor --> rq2 : monitor_load  
-monitor --> rq3 : monitor_load
+monitor --> rq0 : "monitor_load"
+monitor --> rq1 : "monitor_load"
+monitor --> rq2 : "monitor_load"
+monitor --> rq3 : "monitor_load"
 
-migrate --> steal : trigger_rebalancing
-steal --> rq3 : steal_from_busy_cores
+migrate --> steal : "trigger_rebalancing"
+steal --> rq3 : "steal_from_busy_cores"
 
-note right of steal : Move threads when\nload imbalance detected
+note right of steal : "Move threads when\nload imbalance detected"
 @enduml
 ```
 
@@ -377,32 +377,32 @@ Batch processing techniques reduce scheduling overhead by amortizing costs acros
 ```plantuml
 @startuml
 !theme plain
-title Scheduler Performance Optimization Techniques
+title "Scheduler Performance Optimization Techniques"
 
 package "Optimization Strategies" {
   
   rectangle "Fast Path Optimization" {
-    [Common Case Handling] as common
-    [Branch Prediction Friendly] as branch
-    [Cache Line Optimization] as cache_opt
+    component [Common Case Handling] as common
+    component [Branch Prediction Friendly] as branch
+    component [Cache Line Optimization] as cache_opt
     
-    note bottom : Optimize frequent operations\nMinimize conditional branches
+    note bottom : "Optimize frequent operations\nMinimize conditional branches"
   }
   
   rectangle "Batch Processing" {
-    [Event Accumulation] as events
-    [Bulk Queue Operations] as bulk
-    [Amortized Costs] as amortize
+    component [Event Accumulation] as events
+    component [Bulk Queue Operations] as bulk
+    component [Amortized Costs] as amortize
     
-    note bottom : Process multiple events together\nReduce per-operation overhead
+    note bottom : "Process multiple events together\nReduce per-operation overhead"
   }
   
   rectangle "Lock-free Techniques" {
-    [Atomic Operations] as atomic
-    [Per-CPU Data Structures] as percpu
-    [RCU Synchronization] as rcu
+    component [Atomic Operations] as atomic
+    component [Per-CPU Data Structures] as percpu
+    component [RCU Synchronization] as rcu
     
-    note bottom : Eliminate locking overhead\nImprove scalability
+    note bottom : "Eliminate locking overhead\nImprove scalability"
   }
 }
 
@@ -446,48 +446,48 @@ Container and virtualization technologies introduce new scheduling challenges as
 ```plantuml
 @startuml
 !theme plain
-title Future Scheduling Architecture Trends
+title "Future Scheduling Architecture Trends"
 
 package "Emerging Technologies" {
   
   rectangle "Heterogeneous Computing" {
-    [Big CPU Cores] as big_cores
-    [Little CPU Cores] as little_cores
-    [GPU Acceleration] as gpu
-    [AI/ML Accelerators] as ai_accel
+    component [Big CPU Cores] as big_cores
+    component [Little CPU Cores] as little_cores
+    component [GPU Acceleration] as gpu
+    component [AI/ML Accelerators] as ai_accel
     
-    note bottom : Match workloads\nto optimal hardware
+    note bottom : "Match workloads\nto optimal hardware"
   }
   
   rectangle "Energy-aware Scheduling" {
-    [Dynamic Voltage Scaling] as dvs
-    [Core Parking] as parking
-    [Thermal Management] as thermal
+    component [Dynamic Voltage Scaling] as dvs
+    component [Core Parking] as parking
+    component [Thermal Management] as thermal
     
-    note bottom : Balance performance\nwith power consumption
+    note bottom : "Balance performance\nwith power consumption"
   }
   
   rectangle "Machine Learning Integration" {
-    [Workload Prediction] as prediction
-    [Adaptive Parameters] as adaptive
-    [Performance Modeling] as modeling
+    component [Workload Prediction] as prediction
+    component [Adaptive Parameters] as adaptive
+    component [Performance Modeling] as modeling
     
-    note bottom : Use AI to optimize\nscheduling decisions
+    note bottom : "Use AI to optimize\nscheduling decisions"
   }
 }
 
 package "Implementation Challenges" {
   
-  [Scalability to 1000+ cores] as scale
-  [Real-time guarantee preservation] as rt_preserve
-  [Cross-layer optimization] as cross_layer
-  [Security and isolation] as security
+  component [Scalability to 1000+ cores] as scale
+  component [Real-time guarantee preservation] as rt_preserve
+  component [Cross-layer optimization] as cross_layer
+  component [Security and isolation] as security
 }
 
-big_cores --> scale : requires
-little_cores --> rt_preserve : enables
-gpu --> cross_layer : necessitates
-ai_accel --> security : complicates
+big_cores --> scale : "requires"
+little_cores --> rt_preserve : "enables"
+gpu --> cross_layer : "necessitates"
+ai_accel --> security : "complicates"
 @enduml
 ```
 

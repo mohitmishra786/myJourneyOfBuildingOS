@@ -13,38 +13,38 @@ Critical sections represent code segments that access shared resources and must 
 ```plantuml
 @startuml
 !theme plain
-title Race Condition Demonstration
+title "Race Condition Demonstration"
 
 participant "Thread 1" as t1
 participant "Shared Counter" as counter
 participant "Thread 2" as t2
 
-note over counter : Initial value = 100
+note over counter : "Initial value = 100"
 
 == Race Condition Scenario ==
-t1 -> counter : read(counter) = 100
-t2 -> counter : read(counter) = 100
-t1 -> t1 : increment: 100 + 1 = 101
-t2 -> t2 : increment: 100 + 1 = 101
-t1 -> counter : write(101)
-t2 -> counter : write(101)
+t1 -> counter : "read(counter) = 100"
+t2 -> counter : "read(counter) = 100"
+t1 -> t1 : "increment: 100 + 1 = 101"
+t2 -> t2 : "increment: 100 + 1 = 101"
+t1 -> counter : "write(101)"
+t2 -> counter : "write(101)"
 
-note over counter : Final value = 101\n(Should be 102)
+note over counter : "Final value = 101\n(Should be 102)"
 
 == Properly Synchronized Scenario ==
-t1 -> t1 : acquire_lock()
-t1 -> counter : read(counter) = 100
-t1 -> t1 : increment: 100 + 1 = 101
-t1 -> counter : write(101)
-t1 -> t1 : release_lock()
+t1 -> t1 : "acquire_lock()"
+t1 -> counter : "read(counter) = 100"
+t1 -> t1 : "increment: 100 + 1 = 101"
+t1 -> counter : "write(101)"
+t1 -> t1 : "release_lock()"
 
-t2 -> t2 : acquire_lock() [blocks]
-t2 -> counter : read(counter) = 101
-t2 -> t2 : increment: 101 + 1 = 102
-t2 -> counter : write(102)
-t2 -> t2 : release_lock()
+t2 -> t2 : "acquire_lock() [blocks]"
+t2 -> counter : "read(counter) = 101"
+t2 -> t2 : "increment: 101 + 1 = 102"
+t2 -> counter : "write(102)"
+t2 -> t2 : "release_lock()"
 
-note over counter : Final value = 102 (Correct)
+note over counter : "Final value = 102 (Correct)"
 @enduml
 ```
 
@@ -59,7 +59,7 @@ Hardware support for atomic operations enables more efficient mutual exclusion i
 ```plantuml
 @startuml
 !theme plain
-title Mutual Exclusion Implementation Hierarchy
+title "Mutual Exclusion Implementation Hierarchy"
 
 package "Hardware Atomic Operations" {
   class AtomicOperations {
@@ -77,9 +77,9 @@ package "Low-level Synchronization Primitives" {
   class Spinlock {
     + locked: atomic_boolean
     --
-    + acquire(): while(test_and_set(locked))
-    + release(): locked = false
-    + try_acquire(): test_and_set(locked)
+    + acquire(): "while(test_and_set(locked))"
+    + release(): "locked = false"
+    + try_acquire(): "test_and_set(locked)"
   }
   
   class Mutex {
@@ -87,8 +87,8 @@ package "Low-level Synchronization Primitives" {
     + wait_queue: thread_queue
     + spin_count: int
     --
-    + acquire(): try_spin_then_block()
-    + release(): wake_waiting_thread()
+    + acquire(): "try_spin_then_block()"
+    + release(): "wake_waiting_thread()"
     + is_owned_by_current(): boolean
   }
 }
@@ -98,25 +98,25 @@ package "High-level Synchronization Objects" {
     + count: atomic_int
     + wait_queue: thread_queue
     --
-    + wait(): decrement_and_block_if_zero()
-    + signal(): increment_and_wake_thread()
-    + try_wait(): non_blocking_decrement()
+    + wait(): "decrement_and_block_if_zero()"
+    + signal(): "increment_and_wake_thread()"
+    + try_wait(): "non_blocking_decrement()"
   }
   
   class ConditionVariable {
     + wait_queue: thread_queue
     + associated_mutex: mutex*
     --
-    + wait(mutex): release_mutex_and_block()
-    + signal(): wake_one_waiting_thread()
-    + broadcast(): wake_all_waiting_threads()
+    + wait(mutex): "release_mutex_and_block()"
+    + signal(): "wake_one_waiting_thread()"
+    + broadcast(): "wake_all_waiting_threads()"
   }
 }
 
-AtomicOperations --> Spinlock : implements
-AtomicOperations --> Mutex : implements
-Mutex --> Semaphore : builds_upon
-Mutex --> ConditionVariable : coordinates_with
+AtomicOperations --> Spinlock : "implements"
+AtomicOperations --> Mutex : "implements"
+Mutex --> Semaphore : "builds_upon"
+Mutex --> ConditionVariable : "coordinates_with"
 @enduml
 ```
 
@@ -135,7 +135,7 @@ Producer-consumer problems demonstrate semaphore usage for coordinating threads 
 ```plantuml
 @startuml
 !theme plain
-title Semaphore-based Producer-Consumer Implementation
+title "Semaphore-based Producer-Consumer Implementation"
 
 package "Producer-Consumer System" {
   
@@ -175,13 +175,13 @@ package "Producer-Consumer System" {
   }
 }
 
-Producer --> SemaphoreSet : wait(empty_slots)\nsignal(filled_slots)
-Consumer --> SemaphoreSet : wait(filled_slots)\nsignal(empty_slots)
-SemaphoreSet --> BoundedBuffer : protects_access
-Producer --> BoundedBuffer : put_item()
-Consumer --> BoundedBuffer : get_item()
+Producer --> SemaphoreSet : "wait(empty_slots)\nsignal(filled_slots)"
+Consumer --> SemaphoreSet : "wait(filled_slots)\nsignal(empty_slots)"
+SemaphoreSet --> BoundedBuffer : "protects_access"
+Producer --> BoundedBuffer : "put_item()"
+Consumer --> BoundedBuffer : "get_item()"
 
-note bottom of SemaphoreSet : empty_slots: counts available space\nfilled_slots: counts available items\nmutex: protects buffer operations
+note bottom of SemaphoreSet : "empty_slots: counts available space\nfilled_slots: counts available items\nmutex: protects buffer operations"
 @enduml
 ```
 
@@ -202,7 +202,7 @@ Monitor concepts encapsulate shared data with the synchronization primitives nee
 ```plantuml
 @startuml
 !theme plain
-title Monitor-style Thread Coordination Pattern
+title "Monitor-style Thread Coordination Pattern"
 
 class ThreadSafeQueue {
   - queue: item_queue
@@ -217,39 +217,33 @@ class ThreadSafeQueue {
   + is_empty(): boolean
   + is_full(): boolean
   --
-  Private Methods:
+  "Private Methods:"
   - wait_for_space()
   - wait_for_item()
   - notify_space_available()
   - notify_item_available()
 }
 
-note top of ThreadSafeQueue : Monitor encapsulates:\n- Shared data (queue)\n- Synchronization primitives\n- Access methods
+note top of ThreadSafeQueue : "Monitor encapsulates:\n- Shared data (queue)\n- Synchronization primitives\n- Access methods"
 
 package "Usage Pattern" {
   class ProducerThread {
     + run(): void
     --
-    while(true) {
-      item = create_item()
-      queue.enqueue(item)
-    }
+    "while(true) {\n  item = create_item()\n  queue.enqueue(item)\n}"
   }
   
   class ConsumerThread {
     + run(): void
     --
-    while(true) {
-      item = queue.dequeue()
-      process_item(item)
-    }
+    "while(true) {\n  item = queue.dequeue()\n  process_item(item)\n}"
   }
 }
 
-ProducerThread --> ThreadSafeQueue : enqueue()
-ConsumerThread --> ThreadSafeQueue : dequeue()
+ProducerThread --> ThreadSafeQueue : "enqueue()"
+ConsumerThread --> ThreadSafeQueue : "dequeue()"
 
-note bottom : Threads coordinate through\nmonitor interface without\nexplicit synchronization
+note bottom : "Threads coordinate through\nmonitor interface without\nexplicit synchronization"
 @enduml
 ```
 
@@ -270,48 +264,48 @@ Resource ordering provides a simple deadlock prevention technique by requiring a
 ```plantuml
 @startuml
 !theme plain
-title Deadlock Detection and Prevention Strategies
+title "Deadlock Detection and Prevention Strategies"
 
 package "Deadlock Scenarios" {
   
   rectangle "Circular Wait Example" {
-    [Thread A] as ta
-    [Lock 1] as l1
-    [Thread B] as tb
-    [Lock 2] as l2
+    component [Thread A] as ta
+    component [Lock 1] as l1
+    component [Thread B] as tb
+    component [Lock 2] as l2
     
-    ta --> l1 : holds
-    ta --> l2 : waits_for
-    tb --> l2 : holds
-    tb --> l1 : waits_for
+    ta --> l1 : "holds"
+    ta --> l2 : "waits_for"
+    tb --> l2 : "holds"
+    tb --> l1 : "waits_for"
     
-    note bottom : Circular dependency\ncauses deadlock
+    note bottom : "Circular dependency\ncauses deadlock"
   }
 }
 
 package "Prevention Strategies" {
   
   rectangle "Lock Ordering" {
-    [Global Lock Order] as order
-    [Lock 1 (Priority 1)] as lo1
-    [Lock 2 (Priority 2)] as lo2
-    [Lock 3 (Priority 3)] as lo3
+    component [Global Lock Order] as order
+    component [Lock 1 (Priority 1)] as lo1
+    component [Lock 2 (Priority 2)] as lo2
+    component [Lock 3 (Priority 3)] as lo3
     
     order --> lo1
-    order --> lo2  
+    order --> lo2
     order --> lo3
     
-    note bottom : Always acquire locks\nin same order
+    note bottom : "Always acquire locks\nin same order"
   }
   
   rectangle "Timeout-based" {
-    [Try-lock with Timeout] as timeout
-    [Backoff and Retry] as backoff
-    [Resource Release] as release
+    component [Try-lock with Timeout] as timeout
+    component [Backoff and Retry] as backoff
+    component [Resource Release] as release
     
-    timeout --> backoff : on_failure
-    backoff --> release : release_held_locks
-    release --> timeout : retry_acquisition
+    timeout --> backoff : "on_failure"
+    backoff --> release : "release_held_locks"
+    release --> timeout : "retry_acquisition"
   }
 }
 
@@ -327,7 +321,7 @@ package "Detection Algorithm" {
     + build_wait_graph(): void
   }
   
-  note bottom of DeadlockDetector : Periodically checks for\ncycles in resource graph
+  note bottom of DeadlockDetector : "Periodically checks for\ncycles in resource graph"
 }
 @enduml
 ```
@@ -349,7 +343,7 @@ ABA problems represent a subtle challenge in lock-free programming where a value
 ```plantuml
 @startuml
 !theme plain
-title Lock-free Data Structure Implementation
+title "Lock-free Data Structure Implementation"
 
 package "Lock-free Stack Example" {
   
@@ -360,7 +354,7 @@ package "Lock-free Stack Example" {
     + pop(): optional<value>
     + is_empty(): boolean
     --
-    Private:
+    "Private:"
     - cas_push(new_node): boolean
     - cas_pop(): node*
   }
@@ -372,21 +366,21 @@ package "Lock-free Stack Example" {
     + StackNode(value)
   }
   
-  LockFreeStack --> StackNode : manages
+  LockFreeStack --> StackNode : "manages"
 }
 
 package "Push Operation Flow" {
   start
-  :Create new node;
-  :new_node.data = value;
+  :"Create new node";
+  :"new_node.data = value";
   
   repeat
-    :old_top = stack.top.load();
-    :new_node.next = old_top;
-    :success = stack.top.compare_and_swap(old_top, new_node);
-  repeat while (not success)
+    :"old_top = stack.top.load()";
+    :"new_node.next = old_top";
+    :"success = stack.top.compare_and_swap(old_top, new_node)";
+  repeat while ("not success")
   
-  :Push completed;
+  :"Push completed";
   stop
 }
 
@@ -394,22 +388,22 @@ package "Pop Operation Flow" {
   start
   
   repeat
-    :old_top = stack.top.load();
-    if (old_top == null) then (yes)
-      :Return empty;
+    :"old_top = stack.top.load()";
+    if ("old_top == null") then (yes)
+      :"Return empty";
       stop
     endif
-    :next = old_top.next.load();
-    :success = stack.top.compare_and_swap(old_top, next);
-  repeat while (not success)
+    :"next = old_top.next.load()";
+    :"success = stack.top.compare_and_swap(old_top, next)";
+  repeat while ("not success")
   
-  :value = old_top.data;
-  :Reclaim old_top memory;
-  :Return value;
+  :"value = old_top.data";
+  :"Reclaim old_top memory";
+  :"Return value";
   stop
 }
 
-note bottom : Compare-and-swap ensures\natomic pointer updates
+note bottom : "Compare-and-swap ensures\natomic pointer updates"
 @enduml
 ```
 
@@ -430,13 +424,13 @@ Adaptive algorithms adjust synchronization behavior based on runtime conditions.
 ```plantuml
 @startuml
 !theme plain
-title Synchronization Performance Optimization Strategies
+title "Synchronization Performance Optimization Strategies"
 
 package "Performance Factors" {
   
   card "Contention Levels" {
     usecase "Low: Spin-based synchronization" as low_contention
-    usecase "Medium: Hybrid spin-then-block" as med_contention  
+    usecase "Medium: Hybrid spin-then-block" as med_contention
     usecase "High: Blocking synchronization" as high_contention
   }
   
@@ -456,27 +450,27 @@ package "Performance Factors" {
 package "Optimization Techniques" {
   
   rectangle "Lock Granularity Tuning" {
-    [Reader-Writer Locks] as rw_locks
-    [Lock Splitting] as split_locks
-    [Lock-free Algorithms] as lockfree
+    component [Reader-Writer Locks] as rw_locks
+    component [Lock Splitting] as split_locks
+    component [Lock-free Algorithms] as lockfree
     
-    note bottom : Balance protection\nwith parallelism
+    note bottom : "Balance protection\nwith parallelism"
   }
   
   rectangle "Cache Optimization" {
-    [False Sharing Avoidance] as false_sharing
-    [Lock Padding] as padding
-    [Thread-local Storage] as tls
+    component [False Sharing Avoidance] as false_sharing
+    component [Lock Padding] as padding
+    component [Thread-local Storage] as tls
     
-    note bottom : Minimize cache\ncoherency traffic
+    note bottom : "Minimize cache\ncoherency traffic"
   }
   
   rectangle "Adaptive Strategies" {
-    [Spin-then-block Mutexes] as adaptive_mutex
-    [Backoff Algorithms] as backoff
-    [Load-based Decisions] as load_based
+    component [Spin-then-block Mutexes] as adaptive_mutex
+    component [Backoff Algorithms] as backoff
+    component [Load-based Decisions] as load_based
     
-    note bottom : Adjust behavior\nbased on conditions
+    note bottom : "Adjust behavior\nbased on conditions"
   }
 }
 

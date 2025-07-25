@@ -13,39 +13,39 @@ This architectural decision affects every aspect of thread behavior, from creati
 ```plantuml
 @startuml
 !theme plain
-title Thread Implementation Architecture Layers
+title "Thread Implementation Architecture Layers"
 
 package "Application Layer" {
-  [Application Code] as app
-  [Thread Library] as lib
-  note right of lib : User-level thread\nmanagement functions
+  component [Application Code] as app
+  component [Thread Library] as lib
+  note right of lib : "User-level thread\nmanagement functions"
 }
 
 package "User Space" {
   rectangle "User-level Threads" {
-    [User Thread 1] as ut1
-    [User Thread 2] as ut2
-    [User Thread 3] as ut3
+    component [User Thread 1] as ut1
+    component [User Thread 2] as ut2
+    component [User Thread 3] as ut3
   }
   
-  [Thread Control Blocks] as tcb_user
-  [User-level Scheduler] as sched_user
+  component [Thread Control Blocks] as tcb_user
+  component [User-level Scheduler] as sched_user
 }
 
 package "System Call Interface" {
-  [System Call Layer] as syscall
-  note bottom of syscall : Transition point between\nuser and kernel space
+  component [System Call Layer] as syscall
+  note bottom of syscall : "Transition point between\nuser and kernel space"
 }
 
 package "Kernel Space" {
   rectangle "Kernel-level Threads" {
-    [Kernel Thread 1] as kt1
-    [Kernel Thread 2] as kt2
+    component [Kernel Thread 1] as kt1
+    component [Kernel Thread 2] as kt2
   }
   
-  [Kernel Thread Control Blocks] as tcb_kernel
-  [Kernel Scheduler] as sched_kernel
-  [System Resources] as resources
+  component [Kernel Thread Control Blocks] as tcb_kernel
+  component [Kernel Scheduler] as sched_kernel
+  component [System Resources] as resources
 }
 
 app --> lib
@@ -55,7 +55,7 @@ lib --> ut3
 lib --> tcb_user
 lib --> sched_user
 
-lib --> syscall : Only for kernel-level\nthread operations
+lib --> syscall : "Only for kernel-level\nthread operations"
 
 syscall --> kt1
 syscall --> kt2
@@ -77,33 +77,33 @@ The primary advantage of user-level threads lies in performance optimization. Th
 ```plantuml
 @startuml
 !theme plain
-title User-level Thread Operation Flow
+title "User-level Thread Operation Flow"
 
 participant "Application" as app
 participant "Thread Library" as lib
 participant "Thread Scheduler" as sched
 participant "Thread Context" as ctx
 
-app -> lib: pthread_create()
-lib -> lib: allocate_thread_stack()
-lib -> lib: initialize_thread_context()
-lib -> sched: add_to_ready_queue()
-lib -> app: return_thread_id()
+app -> lib: "pthread_create()"
+lib -> lib: "allocate_thread_stack()"
+lib -> lib: "initialize_thread_context()"
+lib -> sched: "add_to_ready_queue()"
+lib -> app: "return_thread_id()"
 
-note over lib: All operations occur\nin user space
+note over lib: "All operations occur\nin user space"
 
-app -> lib: pthread_yield()
-lib -> ctx: save_current_context()
-lib -> sched: select_next_thread()
-lib -> ctx: restore_thread_context()
-lib -> sched: update_scheduling_state()
+app -> lib: "pthread_yield()"
+lib -> ctx: "save_current_context()"
+lib -> sched: "select_next_thread()"
+lib -> ctx: "restore_thread_context()"
+lib -> sched: "update_scheduling_state()"
 
-note over ctx: Context switch happens\nwithout kernel involvement
+note over ctx: "Context switch happens\nwithout kernel involvement"
 
-app -> lib: pthread_exit()
-lib -> lib: cleanup_thread_resources()
-lib -> sched: remove_from_all_queues()
-lib -> lib: deallocate_thread_stack()
+app -> lib: "pthread_exit()"
+lib -> lib: "cleanup_thread_resources()"
+lib -> sched: "remove_from_all_queues()"
+lib -> lib: "deallocate_thread_stack()"
 @enduml
 ```
 
@@ -124,7 +124,7 @@ System call integration represents a major advantage of kernel-level threads. Bl
 ```plantuml
 @startuml
 !theme plain
-title Kernel-level Thread Management System
+title "Kernel-level Thread Management System"
 
 package "Kernel Thread Subsystem" {
   
@@ -162,19 +162,19 @@ package "Kernel Thread Subsystem" {
   KernelThreadManager --> KernelScheduler
   KernelThreadManager --> SystemCallHandler
   
-  ThreadControlBlock --> KernelScheduler : scheduling_info
-  SystemCallHandler --> ThreadControlBlock : state_updates
+  ThreadControlBlock --> KernelScheduler : "scheduling_info"
+  SystemCallHandler --> ThreadControlBlock : "state_updates"
 }
 
 package "Hardware Interface" {
-  [CPU Cores] as cpu
-  [Memory Management Unit] as mmu
-  [Interrupt Controller] as ic
+  component [CPU Cores] as cpu
+  component [Memory Management Unit] as mmu
+  component [Interrupt Controller] as ic
 }
 
-KernelScheduler --> cpu : thread_dispatch
-ThreadControlBlock --> mmu : memory_context
-SystemCallHandler --> ic : interrupt_handling
+KernelScheduler --> cpu : "thread_dispatch"
+ThreadControlBlock --> mmu : "memory_context"
+SystemCallHandler --> ic : "interrupt_handling"
 @enduml
 ```
 
@@ -195,7 +195,7 @@ Context switching performance shows similar disparities. User-level context swit
 ```plantuml
 @startuml
 !theme plain
-title Thread Performance Comparison Metrics
+title "Thread Performance Comparison Metrics"
 
 package "Performance Benchmarks" {
   
@@ -223,15 +223,15 @@ package "Performance Benchmarks" {
 package "Scalability Factors" {
   
   rectangle "User-level Limitations" {
-    [Single CPU utilization] as limit1
-    [Blocking call problems] as limit2
-    [No preemptive scheduling] as limit3
+    component [Single CPU utilization] as limit1
+    component [Blocking call problems] as limit2
+    component [No preemptive scheduling] as limit3
   }
   
   rectangle "Kernel-level Advantages" {
-    [Multiprocessor support] as adv1
-    [System service integration] as adv2
-    [Preemptive scheduling] as adv3
+    component [Multiprocessor support] as adv1
+    component [System service integration] as adv2
+    component [Preemptive scheduling] as adv3
   }
 }
 @enduml
@@ -254,7 +254,7 @@ Condition variables and semaphores require complex implementation in user-level 
 ```plantuml
 @startuml
 !theme plain
-title Synchronization Primitive Implementation Comparison
+title "Synchronization Primitive Implementation Comparison"
 
 package "User-level Synchronization" {
   
@@ -262,8 +262,8 @@ package "User-level Synchronization" {
     + lock_flag: atomic_int
     + waiting_threads: queue
     --
-    + acquire(): check and spin
-    + release(): update flag
+    + acquire(): "check and spin"
+    + release(): "update flag"
     + yield_if_contended()
   }
   
@@ -271,12 +271,12 @@ package "User-level Synchronization" {
     + waiting_threads: queue
     + associated_mutex: UserMutex*
     --
-    + wait(): add to queue, yield
-    + signal(): wake one thread
-    + broadcast(): wake all threads
+    + wait(): "add to queue, yield"
+    + signal(): "wake one thread"
+    + broadcast(): "wake all threads"
   }
   
-  note bottom of UserMutex : Implemented using\natomic operations\nand thread yielding
+  note bottom of UserMutex : "Implemented using\natomic operations\nand thread yielding"
 }
 
 package "Kernel-level Synchronization" {
@@ -286,8 +286,8 @@ package "Kernel-level Synchronization" {
     + blocked_threads: wait_queue
     + spin_count: int
     --
-    + acquire(): try_lock, block_if_needed
-    + release(): wake_waiting_thread
+    + acquire(): "try_lock, block_if_needed"
+    + release(): "wake_waiting_thread"
     + handle_priority_inheritance()
   }
   
@@ -295,16 +295,16 @@ package "Kernel-level Synchronization" {
     + wait_queue: blocked_threads
     + mutex: KernelMutex*
     --
-    + wait(): block thread, release mutex
-    + signal(): wake thread, reacquire mutex
-    + broadcast(): wake all, handle thundering_herd
+    + wait(): "block thread, release mutex"
+    + signal(): "wake thread, reacquire mutex"
+    + broadcast(): "wake all, handle thundering_herd"
   }
   
-  note bottom of KernelMutex : Implemented using\nkernel blocking\nand scheduling integration
+  note bottom of KernelMutex : "Implemented using\nkernel blocking\nand scheduling integration"
 }
 
-UserMutex ..> UserConditionVariable : coordinates with
-KernelMutex ..> KernelConditionVariable : integrates with
+UserMutex ..> UserConditionVariable : "coordinates with"
+KernelMutex ..> KernelConditionVariable : "integrates with"
 @enduml
 ```
 
@@ -325,7 +325,7 @@ Memory management integration varies between approaches. Kernel-level threads ca
 ```plantuml
 @startuml
 !theme plain
-title System Resource Integration Architecture
+title "System Resource Integration Architecture"
 
 participant "Thread" as thread
 participant "Thread Library" as lib
@@ -334,32 +334,32 @@ participant "Kernel Services" as kernel
 participant "Hardware Resources" as hw
 
 == User-level Thread System Call ==
-thread -> lib: read_file()
-lib -> lib: check_if_would_block()
+thread -> lib: "read_file()"
+lib -> lib: "check_if_would_block()"
 alt Non-blocking operation
-  lib -> syscall: read()
-  syscall -> kernel: perform_read()
-  kernel -> hw: access_device()
-  hw -> kernel: return_data()
-  kernel -> syscall: return_result()
-  syscall -> lib: data_ready()
-  lib -> thread: return_data()
+  lib -> syscall: "read()"
+  syscall -> kernel: "perform_read()"
+  kernel -> hw: "access_device()"
+  hw -> kernel: "return_data()"
+  kernel -> syscall: "return_result()"
+  syscall -> lib: "data_ready()"
+  lib -> thread: "return_data()"
 else Blocking operation
-  lib -> lib: simulate_async_operation()
-  note over lib: Problem: May block\nentire process
+  lib -> lib: "simulate_async_operation()"
+  note over lib: "Problem: May block\nentire process"
 end
 
 == Kernel-level Thread System Call ==
-thread -> syscall: read_file()
-syscall -> kernel: block_current_thread()
-kernel -> kernel: schedule_other_threads()
-kernel -> hw: access_device()
-hw -> kernel: data_ready_interrupt()
-kernel -> kernel: wake_blocked_thread()
-kernel -> syscall: return_result()
-syscall -> thread: return_data()
+thread -> syscall: "read_file()"
+syscall -> kernel: "block_current_thread()"
+kernel -> kernel: "schedule_other_threads()"
+kernel -> hw: "access_device()"
+hw -> kernel: "data_ready_interrupt()"
+kernel -> kernel: "wake_blocked_thread()"
+kernel -> syscall: "return_result()"
+syscall -> thread: "return_data()"
 
-note over kernel: Other threads continue\nexecution during I/O
+note over kernel: "Other threads continue\nexecution during I/O"
 @enduml
 ```
 
@@ -380,40 +380,40 @@ Scheduler activations represent another hybrid approach where the kernel notifie
 ```plantuml
 @startuml
 !theme plain
-title Hybrid Threading Architecture Evolution
+title "Hybrid Threading Architecture Evolution"
 
 package "Traditional Models" {
   rectangle "Pure User-level" {
-    [Many User Threads] --> [Single Kernel Thread]
-    note bottom : Fast but limited
+    component [Many User Threads] --> component [Single Kernel Thread]
+    note bottom : "Fast but limited"
   }
   
   rectangle "Pure Kernel-level" {
-    [User Thread 1] --> [Kernel Thread 1]
-    [User Thread 2] --> [Kernel Thread 2]
-    [User Thread 3] --> [Kernel Thread 3]
-    note bottom : Flexible but expensive
+    component [User Thread 1] --> component [Kernel Thread 1]
+    component [User Thread 2] --> component [Kernel Thread 2]
+    component [User Thread 3] --> component [Kernel Thread 3]
+    note bottom : "Flexible but expensive"
   }
 }
 
 package "Modern Hybrid Approaches" {
   
   rectangle "Two-level Model" {
-    [User Threads] --> [Thread Pool Manager]
-    [Thread Pool Manager] --> [Limited Kernel Threads]
-    note bottom : Balances performance\nand functionality
+    component [User Threads] --> component [Thread Pool Manager]
+    component [Thread Pool Manager] --> component [Limited Kernel Threads]
+    note bottom : "Balances performance\nand functionality"
   }
   
   rectangle "Scheduler Activations" {
-    [User-level Scheduler] <--> [Kernel Notifications]
-    [Kernel Notifications] <--> [Kernel Scheduler]
-    note bottom : Cooperative scheduling\nbetween layers
+    component [User-level Scheduler] <--> component [Kernel Notifications]
+    component [Kernel Notifications] <--> component [Kernel Scheduler]
+    note bottom : "Cooperative scheduling\nbetween layers"
   }
   
   rectangle "Work-stealing" {
-    [Thread Pools] --> [CPU-specific Queues]
-    [CPU-specific Queues] --> [Load Balancing]
-    note bottom : Optimizes for\nmulticore systems
+    component [Thread Pools] --> component [CPU-specific Queues]
+    component [CPU-specific Queues] --> component [Load Balancing]
+    note bottom : "Optimizes for\nmulticore systems"
   }
 }
 @enduml

@@ -13,7 +13,7 @@ Thread attributes control various aspects of thread behavior including stack siz
 ```plantuml
 @startuml
 !theme plain
-title Pthread Lifecycle and Management
+title "Pthread Lifecycle and Management"
 
 package "Thread Creation and Management" {
   
@@ -45,48 +45,48 @@ package "Thread Creation and Management" {
 package "Thread Lifecycle Flow" {
   
   start
-  :pthread_create() called;
-  :Allocate thread resources;
-  :Initialize thread context;
-  :Start thread execution;
+  :"pthread_create() called";
+  :"Allocate thread resources";
+  :"Initialize thread context";
+  :"Start thread execution";
   
   fork
-    :Thread executes start_routine();
-    :Perform thread work;
+    :"Thread executes start_routine()";
+    :"Perform thread work";
     
     fork again
-      :pthread_exit() called;
+      :"pthread_exit() called";
     fork again
-      :Return from start_routine();
+      :"Return from start_routine()";
     end fork
     
-    :Thread terminates;
+    :"Thread terminates";
     
-    if (Detached thread?) then (yes)
-      :Automatic cleanup;
+    if ("Detached thread?") then (yes)
+      :"Automatic cleanup";
       stop
     else (no)
-      :Wait for pthread_join();
-      :Return value to joiner;
-      :Complete cleanup;
+      :"Wait for pthread_join()";
+      :"Return value to joiner";
+      :"Complete cleanup";
       stop
     endif
   fork again
-    :Main thread continues;
-    if (Need thread result?) then (yes)
-      :Call pthread_join();
-      :Retrieve return value;
+    :"Main thread continues";
+    if ("Need thread result?") then (yes)
+      :"Call pthread_join()";
+      :"Retrieve return value";
     else (no)
-      :Continue independently;
+      :"Continue independently";
     endif
   end fork
 }
 
-PthreadAPI --> ThreadLifecycle : manages
-ThreadLifecycle --> PthreadAPI : uses_functions
+PthreadAPI --> ThreadLifecycle : "manages"
+ThreadLifecycle --> PthreadAPI : "uses_functions"
 
-note bottom of PthreadAPI : Standard POSIX interface\nfor thread operations
-note bottom of ThreadLifecycle : State transitions during\nthread execution
+note bottom of PthreadAPI : "Standard POSIX interface\nfor thread operations"
+note bottom of ThreadLifecycle : "State transitions during\nthread execution"
 @enduml
 ```
 
@@ -101,7 +101,7 @@ Condition variables enable threads to wait for specific conditions to become tru
 ```plantuml
 @startuml
 !theme plain
-title Pthread Synchronization Primitives
+title "Pthread Synchronization Primitives"
 
 package "Mutex Operations" {
   
@@ -155,33 +155,33 @@ package "Producer-Consumer Example" {
   participant "Condition Variables" as cond
   
   == Producer Operation ==
-  prod -> mutex: pthread_mutex_lock()
+  prod -> mutex: "pthread_mutex_lock()"
   
-  loop while buffer full
-    prod -> cond: pthread_cond_wait(not_full, mutex)
+  loop "while buffer full"
+    prod -> cond: "pthread_cond_wait(not_full, mutex)"
   end
   
-  prod -> buffer: add_item()
-  prod -> cond: pthread_cond_signal(not_empty)
-  prod -> mutex: pthread_mutex_unlock()
+  prod -> buffer: "add_item()"
+  prod -> cond: "pthread_cond_signal(not_empty)"
+  prod -> mutex: "pthread_mutex_unlock()"
   
   == Consumer Operation ==
-  cons -> mutex: pthread_mutex_lock()
+  cons -> mutex: "pthread_mutex_lock()"
   
-  loop while buffer empty
-    cons -> cond: pthread_cond_wait(not_empty, mutex)
+  loop "while buffer empty"
+    cons -> cond: "pthread_cond_wait(not_empty, mutex)"
   end
   
-  cons -> buffer: remove_item()
-  cons -> cond: pthread_cond_signal(not_full)
-  cons -> mutex: pthread_mutex_unlock()
+  cons -> buffer: "remove_item()"
+  cons -> cond: "pthread_cond_signal(not_full)"
+  cons -> mutex: "pthread_mutex_unlock()"
 }
 
-PthreadMutex --> MutexTypes : implements
-PthreadMutex --> PthreadCondVar : coordinates_with
+PthreadMutex --> MutexTypes : "implements"
+PthreadMutex --> PthreadCondVar : "coordinates_with"
 
-note bottom of PthreadMutex : Provides mutual exclusion\nwith various semantics
-note bottom of PthreadCondVar : Enables waiting for\nspecific conditions
+note bottom of PthreadMutex : "Provides mutual exclusion\nwith various semantics"
+note bottom of PthreadCondVar : "Enables waiting for\nspecific conditions"
 @enduml
 ```
 
@@ -202,7 +202,7 @@ C11 thread_local storage class provides compiler-supported thread-local variable
 ```plantuml
 @startuml
 !theme plain
-title Thread-specific Data Management
+title "Thread-specific Data Management"
 
 package "TSD Implementation" {
   
@@ -233,47 +233,47 @@ package "TSD Implementation" {
 package "Usage Pattern Example" {
   
   rectangle "Library Initialization" {
-    [pthread_once()] as once
-    [pthread_key_create()] as key_create
-    [Register destructor] as register_dest
+    component [pthread_once()] as once
+    component [pthread_key_create()] as key_create
+    component [Register destructor] as register_dest
     
     once --> key_create
     key_create --> register_dest
     
-    note bottom : One-time initialization\nof global TSD key
+    note bottom : "One-time initialization\nof global TSD key"
   }
   
   rectangle "Thread Usage" {
-    [pthread_getspecific()] as get_spec
-    [Check if NULL] as check_null
-    [Allocate private data] as alloc_data
-    [pthread_setspecific()] as set_spec
-    [Use thread-local data] as use_data
+    component [pthread_getspecific()] as get_spec
+    component [Check if NULL] as check_null
+    component [Allocate private data] as alloc_data
+    component [pthread_setspecific()] as set_spec
+    component [Use thread-local data] as use_data
     
     get_spec --> check_null
-    check_null --> alloc_data : if_null
+    check_null --> alloc_data : "if_null"
     alloc_data --> set_spec
     set_spec --> use_data
-    check_null --> use_data : if_exists
+    check_null --> use_data : "if_exists"
     
-    note bottom : Each thread gets\nprivate data instance
+    note bottom : "Each thread gets\nprivate data instance"
   }
   
   rectangle "Thread Termination" {
-    [Thread exits] as thread_exit
-    [Call destructors] as call_dest
-    [Clean up TSD] as cleanup_tsd
+    component [Thread exits] as thread_exit
+    component [Call destructors] as call_dest
+    component [Clean up TSD] as cleanup_tsd
     
     thread_exit --> call_dest
     call_dest --> cleanup_tsd
     
-    note bottom : Automatic cleanup\nof thread-specific data
+    note bottom : "Automatic cleanup\nof thread-specific data"
   }
 }
 
-ThreadSpecificData --> TSDStorage : manages
-TSDStorage --> once : uses_for_init
-get_spec --> TSDStorage : accesses
+ThreadSpecificData --> TSDStorage : "manages"
+TSDStorage --> once : "uses_for_init"
+get_spec --> TSDStorage : "accesses"
 @enduml
 ```
 
@@ -288,7 +288,7 @@ Thread priority settings influence scheduling decisions within scheduling polici
 ```plantuml
 @startuml
 !theme plain
-title Advanced Pthread Attributes and Configuration
+title "Advanced Pthread Attributes and Configuration"
 
 package "Thread Attributes" {
   
@@ -309,7 +309,7 @@ package "Thread Attributes" {
   
   class SchedulingConfiguration {
     + SCHED_FIFO: policy
-    + SCHED_RR: policy  
+    + SCHED_RR: policy
     + SCHED_OTHER: policy
     + PTHREAD_EXPLICIT_SCHED: inherit
     + PTHREAD_INHERIT_SCHED: inherit
@@ -353,22 +353,22 @@ package "Signal Handling" {
 package "Real-time Configuration Example" {
   
   start
-  :Initialize thread attributes;
-  :Set scheduling policy to SCHED_FIFO;
-  :Set high priority (90);
-  :Set explicit scheduling inheritance;
-  :Configure stack size for RT requirements;
-  :Create real-time thread;
-  :Thread executes with RT guarantees;
-  :Monitor timing constraints;
+  :"Initialize thread attributes";
+  :"Set scheduling policy to SCHED_FIFO";
+  :"Set high priority (90)";
+  :"Set explicit scheduling inheritance";
+  :"Configure stack size for RT requirements";
+  :"Create real-time thread";
+  :"Thread executes with RT guarantees";
+  :"Monitor timing constraints";
   stop
 }
 
-PthreadAttributes --> SchedulingConfiguration : configures
-PthreadSignals --> CancellationHandling : implements
+PthreadAttributes --> SchedulingConfiguration : "configures"
+PthreadSignals --> CancellationHandling : "implements"
 
-note bottom of PthreadAttributes : Comprehensive control over\nthread creation parameters
-note bottom of PthreadSignals : Signal handling and\ncancellation mechanisms
+note bottom of PthreadAttributes : "Comprehensive control over\nthread creation parameters"
+note bottom of PthreadSignals : "Signal handling and\ncancellation mechanisms"
 @enduml
 ```
 
@@ -389,7 +389,7 @@ Cache coherence effects become significant in multithreaded applications accessi
 ```plantuml
 @startuml
 !theme plain
-title Pthread Performance Optimization Strategies
+title "Pthread Performance Optimization Strategies"
 
 package "Performance Factors" {
   
@@ -420,30 +420,30 @@ package "Performance Factors" {
 package "Optimization Techniques" {
   
   rectangle "Lock Optimization" {
-    [Reader-Writer Locks] as rw_locks
-    [Spin Locks for Short CS] as spin_locks
-    [Lock-free Data Structures] as lock_free
-    [Fine-grained Locking] as fine_grained
+    component [Reader-Writer Locks] as rw_locks
+    component [Spin Locks for Short CS] as spin_locks
+    component [Lock-free Data Structures] as lock_free
+    component [Fine-grained Locking] as fine_grained
     
-    note bottom : Choose appropriate\nsynchronization primitives
+    note bottom : "Choose appropriate\nsynchronization primitives"
   }
   
   rectangle "Thread Management" {
-    [Thread Pools] as thread_pools
-    [Thread Affinity] as affinity
-    [Load Balancing] as load_balance
-    [Work Stealing] as work_steal
+    component [Thread Pools] as thread_pools
+    component [Thread Affinity] as affinity
+    component [Load Balancing] as load_balance
+    component [Work Stealing] as work_steal
     
-    note bottom : Optimize thread\ncreation and scheduling
+    note bottom : "Optimize thread\ncreation and scheduling"
   }
   
   rectangle "Data Layout" {
-    [Cache Line Alignment] as cache_align
-    [NUMA Awareness] as numa
-    [Data Locality] as locality
-    [Padding for False Sharing] as padding
+    component [Cache Line Alignment] as cache_align
+    component [NUMA Awareness] as numa
+    component [Data Locality] as locality
+    component [Padding for False Sharing] as padding
     
-    note bottom : Optimize memory\naccess patterns
+    note bottom : "Optimize memory\naccess patterns"
   }
 }
 
@@ -462,14 +462,14 @@ package "Performance Measurement" {
   }
 }
 
-SynchronizationOverhead --> rw_locks : motivates
-MemoryEffects --> cache_align : requires
-ProfilingTools --> SynchronizationOverhead : measures
-ProfilingTools --> MemoryEffects : analyzes
+SynchronizationOverhead --> rw_locks : "motivates"
+MemoryEffects --> cache_align : "requires"
+ProfilingTools --> SynchronizationOverhead : "measures"
+ProfilingTools --> MemoryEffects : "analyzes"
 
-rw_locks --> fine_grained : enables
-thread_pools --> affinity : combines_with
-cache_align --> padding : implements
+rw_locks --> fine_grained : "enables"
+thread_pools --> affinity : "combines_with"
+cache_align --> padding : "implements"
 @enduml
 ```
 
@@ -484,7 +484,7 @@ Debugging tools specifically designed for multithreaded applications provide ess
 ```plantuml
 @startuml
 !theme plain
-title Pthread Debugging and Error Handling Framework
+title "Pthread Debugging and Error Handling Framework"
 
 package "Error Categories" {
   
@@ -554,37 +554,37 @@ package "Debugging Tools" {
 package "Error Handling Pattern" {
   
   start
-  :Call pthread function;
-  :Check return value;
+  :"Call pthread function";
+  :"Check return value";
   
-  if (Error occurred?) then (yes)
-    :Identify error type;
-    :Log error context;
-    :Attempt recovery;
+  if ("Error occurred?") then (yes)
+    :"Identify error type";
+    :"Log error context";
+    :"Attempt recovery";
     
-    if (Recovery successful?) then (yes)
-      :Continue execution;
+    if ("Recovery successful?") then (yes)
+      :"Continue execution";
     else (no)
-      :Graceful degradation;
-      :Report failure;
+      :"Graceful degradation";
+      :"Report failure";
       stop
     endif
   else (no)
-    :Continue normal execution;
+    :"Continue normal execution";
   endif
   
-  :Monitor for runtime errors;
-  :Validate invariants;
+  :"Monitor for runtime errors";
+  :"Validate invariants";
   stop
 }
 
-ThreadingErrors --> ErrorCodes : generates
-StaticAnalysis --> DynamicAnalysis : complements
-DebuggingStrategies --> StaticAnalysis : uses
-DebuggingStrategies --> DynamicAnalysis : applies
+ThreadingErrors --> ErrorCodes : "generates"
+StaticAnalysis --> DynamicAnalysis : "complements"
+DebuggingStrategies --> StaticAnalysis : "uses"
+DebuggingStrategies --> DynamicAnalysis : "applies"
 
-note bottom of ThreadingErrors : Common categories of\nthreading-related errors
-note bottom of StaticAnalysis : Compile-time analysis\nfor threading issues
+note bottom of ThreadingErrors : "Common categories of\nthreading-related errors"
+note bottom of StaticAnalysis : "Compile-time analysis\nfor threading issues"
 @enduml
 ```
 
