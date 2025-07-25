@@ -397,6 +397,17 @@
             min-height: 100vh;
         }
         
+        /* Root container */
+        #root {
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
         /* Sidebar layout */
         #sidebar {
             flex-shrink: 0;
@@ -660,8 +671,20 @@
         }
         
         /* Sidebar improvements */
-        #sidebar {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        @media (min-width: 1024px) {
+            #sidebar {
+                position: relative !important;
+                transform: translateX(0) !important;
+                height: 100vh;
+                overflow-y: auto;
+            }
+        }
+        
+        /* Content area */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            overflow-x: hidden;
         }
         
         /* Progress bar animation */
@@ -774,15 +797,13 @@
         
         /* Enhanced typography */
         .prose strong {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            padding: 0.125rem 0.25rem;
-            border-radius: 0.25rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: inherit;
         }
         
         .dark .prose strong {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #fbbf24;
+            font-weight: 700;
+            color: inherit;
         }
         
         /* Syntax highlighting adjustments for dark mode */
@@ -799,7 +820,7 @@
     <script src="book-config.js"></script>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
-    <div id="root" class="min-h-screen app-container"></div>
+    <div id="root"></div>
     
     <!-- Prism.js for Syntax Highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
