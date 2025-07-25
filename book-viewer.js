@@ -604,65 +604,63 @@ class BookViewer {
                 <div id="main-content" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                     <!-- Header -->
                     <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-600 flex-shrink-0">
-                        <div class="px-4 lg:px-8 py-4">
-                            <div class="flex items-center w-full">
-                                <!-- Left Side: Hamburger + Title -->
-                                <div class="flex items-center space-x-4 flex-1">
-                                    <button 
-                                        onclick="bookViewer.toggleSidebar()"
-                                        class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden"
-                                    >
-                                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                                        </svg>
-                                    </button>
-                                    <div>
-                                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">${currentChapter.title}</h1>
-                                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">${currentPage.title}</p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Right Side: Navigation buttons at absolute right edge -->
-                                <div class="flex items-center space-x-2 flex-shrink-0">
-                                    <!-- Dark Mode Toggle -->
-                                    <button 
-                                        onclick="toggleDarkMode()"
-                                        class="dark-mode-toggle focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                                        title="Toggle dark mode"
-                                    ></button>
-                                    
-                                    <!-- Navigation buttons -->
-                                    <button 
-                                        onclick="bookViewer.goToPrevPage()"
-                                        ${isFirstPage ? 'disabled' : ''}
-                                        class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        title="Previous page"
-                                    >
-                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                        Previous
-                                    </button>
-                                    
-                                    <button
-                                        onclick="bookViewer.goToNextPage()"
-                                        ${isLastPage ? 'disabled' : ''}
-                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        title="Next page"
-                                    >
-                                        Next
-                                        <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
+                        <div class="relative flex items-center w-full py-4">
+                            <!-- Left Side: Hamburger + Title with left padding only -->
+                            <div class="flex items-center space-x-4 flex-1 px-4 lg:px-8 pr-80">
+                                <button 
+                                    onclick="bookViewer.toggleSidebar()"
+                                    class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden"
+                                >
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                </button>
+                                <div>
+                                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">${currentChapter.title}</h1>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">${currentPage.title}</p>
                                 </div>
                             </div>
                             
-                            <!-- Progress Bar -->
-                            <div class="mt-4">
-                                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                    <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                                </div>
+                            <!-- Right Side: Navigation buttons positioned absolutely at right edge -->
+                            <div class="absolute right-0 top-1/2 transform -translate-y-1/2 flex items-center space-x-2 bg-white dark:bg-gray-800 pl-4 pr-2 py-2">
+                                <!-- Dark Mode Toggle -->
+                                <button 
+                                    onclick="toggleDarkMode()"
+                                    class="dark-mode-toggle focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                                    title="Toggle dark mode"
+                                ></button>
+                                
+                                <!-- Navigation buttons -->
+                                <button 
+                                    onclick="bookViewer.goToPrevPage()"
+                                    ${isFirstPage ? 'disabled' : ''}
+                                    class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title="Previous page"
+                                >
+                                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    Previous
+                                </button>
+                                
+                                <button
+                                    onclick="bookViewer.goToNextPage()"
+                                    ${isLastPage ? 'disabled' : ''}
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title="Next page"
+                                >
+                                    Next
+                                    <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar with full-width padding -->
+                        <div class="px-4 lg:px-8 pb-4">
+                            <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                             </div>
                         </div>
                     </header>
