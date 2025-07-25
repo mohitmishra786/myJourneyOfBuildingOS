@@ -1,10 +1,14 @@
 const bookConfig = {
+    title: "Operating Systems: Architecture, Design, and Implementation",
+    author: "OS Learning Journey",
+    description: "A comprehensive guide to operating system fundamentals, architecture patterns, and implementation details.",
+    
     chapters: [
         {
-            title: "Index Of The Book",
+            title: "Table of Contents",
             pages: [
                 {
-                    title: "Table Of Content",
+                    title: "Index of the Book",
                     path: "indexOfBook.md"
                 }
             ]
@@ -34,7 +38,7 @@ const bookConfig = {
                     path: "Ch-2-OS-Architecture-Patterns/Monolithic-Kernel.md"
                 },
                 {
-                    title: "Case Study: Traditional Unix Architecture",
+                    title: "Case Study: Traditional Unix Architecture", 
                     path: "Ch-2-OS-Architecture-Patterns/CaseStudies/Traditional-Unix-Architecture.md"
                 },
                 {
@@ -109,6 +113,35 @@ const bookConfig = {
                 {
                     title: "Interrupt Handling and DMA",
                     path: "Ch-3-Computer-System-Architecture/Interrupt-Handling-DMA.md"
+                }
+            ]
+        },
+        {
+            title: "Process Management",
+            pages: [
+                {
+                    title: "Process Concepts and States",
+                    path: "Ch-4-Process-Management/Process-Concepts-and-States.md"
+                },
+                {
+                    title: "Process Control Block (PCB)",
+                    path: "Ch-4-Process-Management/Process-Control-Block-PCB.md"
+                },
+                {
+                    title: "Context Switching",
+                    path: "Ch-4-Process-Management/Context-Switching.md"
+                },
+                {
+                    title: "Process Scheduling Algorithms",
+                    path: "Ch-4-Process-Management/Process-Scheduling-Algorithms.md"
+                },
+                {
+                    title: "Inter-Process Communication (IPC)",
+                    path: "Ch-4-Process-Management/Inter-Process-Communication-IPC.md"
+                },
+                {
+                    title: "POSIX Process Management APIs",
+                    path: "Ch-4-Process-Management/POSIX-Process-Management-APIs.md"
                 }
             ]
         }
