@@ -1,0 +1,62 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  The Operating System Architect's Manual: Designing
+  Tomorrow's Systems Today
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mohit
+    family-names: Mishra
+    email: mohitmishra786687@gmail.com
+    orcid: 'https://orcid.org/0009-0007-5812-2050'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.16732415
+repository-code: 'https://github.com/mohitmishra786/myJourneyOfBuildingOS'
+url: >-
+  https://mohitmishra786.github.io/myJourneyOfBuildingOS/indexofbook
+abstract: >-
+  This book is a comprehensive, interactive learning
+  resource that takes readers through the fundamental
+  concepts of operating systems design and implementation. 
+
+
+  The book covers everything from basic OS architecture
+  patterns to advanced topics like process synchronization
+  and CPU scheduling. What makes it unique is the
+  combination of detailed theoretical explanations with
+  practical, working code demonstrations in C that readers
+  can compile and run themselves.
+
+
+  The interactive web-based format includes visual diagrams,
+  syntax-highlighted code examples, and a responsive design
+  that works on any device. Each chapter builds upon the
+  previous one, creating a structured learning path from OS
+  fundamentals to complex synchronization problems like the
+  dining philosophers.
+
+
+  Perfect for computer science students, developers wanting
+  to understand OS internals, or anyone interested in how
+  operating systems actually work under the hood. The book
+  bridges the gap between theory and practice by providing
+  both conceptual understanding and hands-on experience with
+  real OS concepts.
+keywords:
+  - Operating Systems
+  - OS Development
+  - Process Management
+  - Thread Management
+  - CPU Scheduling
+  - Process Synchronization
+  - System Programming
+  - Educational Resource
+license: MIT
+version: 1.0.0
+date-released: '2025-08-03'
